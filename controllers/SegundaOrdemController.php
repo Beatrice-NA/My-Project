@@ -63,18 +63,18 @@ class SegundaOrdemController extends Controller
             $action_name = $model->nome;
     
             // Obtendo dados do modelo
-            $actions_by_date = $model->getData($action_name, $start, $final);
-            $consultas = count($actions_by_date);
+            $cursor_by_price = $model->getData($action_name, $start, $final);
+            $consultas = count($cursor_by_price);
 
-            if (count($actions_by_date) > 1){
-                $actions_by_date[0]["t_state"] = 2; // inicializa o primeiro estado
+            if (count($cursor_by_price) > 1){
+                $cursor_by_price[0]["t_state"] = 2; // inicializa o primeiro estado
     
                 $three_states = [0, 0, 0];
             
                 //atribui um estado a partir do preço de fechamento para cada data no conjunto de treinamento
-                foreach ($actions_by_date as $index => $cursor) {
+                foreach ($cursor_by_price as $index => $cursor) {
                     if ($index > 1) {
-                        $cursor['t_state'] = $model->getThreeState($cursor['preult'], $actions_by_date[$index - 2]['preult']);
+                        $cursor['t_state'] = $model->getThreeState($cursor['preult'], $cursor_by_price[$index - 2]['preult']);
                         $three_states[$cursor['t_state'] - 1] += 1;
                     }
                 }

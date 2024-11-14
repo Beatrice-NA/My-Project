@@ -221,7 +221,7 @@ class ConsultaModel extends Model
             $j = $i + 1;
             $matrix[$paper[$i][$state_type] - 1][$paper[$j][$state_type] - 1] += 1;
         }   
-        
+
         // Contagem do último valor do conjunto de treinamento
         $matrix[$paper[count($paper) - 1][$state_type] - 1][$paper[count($paper) - 1][$state_type] - 1] += 1;
        
@@ -886,7 +886,7 @@ class ConsultaModel extends Model
     // Calcula a média de cada coluna
     for ($col = 0; $col < count($paper); $col++) {
         $sumstates[$col] = 0;
-        for ($row = 0; $row < $paper; $row++) {
+        for ($row = 0; $row < $cursor_by_price; $row++) {
             $sumstates[$col] += $paper[$row][$col];
         }
         $initialVector[$col] = $sumstates[$col] / $cursor_by_price;

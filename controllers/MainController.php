@@ -1977,29 +1977,29 @@ class MainController extends Controller
             
     
             // Obtendo dados do modelo
-            $actions_by_date = $model->getData($action_name, $start, $final);
+            $cursor_by_price = $model->getData($action_name, $start, $final);
     
-            if (count($actions_by_date) > 0) {
-                $actions_by_date[0]["t_state"] = 2;
+            if (count($cursor_by_price) > 0) {
+                $cursor_by_price[0]["t_state"] = 2;
             }
     
             $three_states = [0, 0, 0];
             
             // Atribuir dois estados anteriores com base no preço de fechamento para cada data no conjunto de treinamento
-            foreach ($actions_by_date as $index => $cursor) {
+            foreach ($cursor_by_price as $index => $cursor) {
                 if ($index > 0) {
                     $t_state = $model ->getThreeState(
                             $cursor['preult'],
-                            $actions_by_date[$index - 1]['preult'],
-                            $actions_by_date[$index - 2]['preult']
+                            $cursor_by_price[$index - 1]['preult'],
+                            $cursor_by_price[$index - 2]['preult']
                     );
                         $three_states[$t_state - 1] += 1;
-                        $actions_by_date[$index]['t_state'] = $t_state;
+                        $cursor_by_price[$index]['t_state'] = $t_state;
                 }
             }
             $three_state_matrix = $model->transitionMatrix($cursor_by_price, $three_states, 3, "t_state");
             $three_state_matrix = $model->transitionMatrixSegundaOrdem($cursor_by_price, $three_states, 3, "t_state"); // Construir a matriz de transição de segunda ordem
-            $three_state_vector = $model->predictVector($three_state_matrix, $actions_by_date, 3, "t_state"); // Construir o vetor de predição
+            $three_state_vector = $model->predictVector($three_state_matrix, $cursor_by_price, 3, "t_state"); // Construir o vetor de predição
     
             /* Validação .................................................................*/
             $Matrix = MatrixFactory::create($three_state_matrix);
