@@ -6,7 +6,7 @@
     <title>Resultado Segunda Ordem</title>
 </head>
 <body>
-    <h3>matrix Segunda Ordem</h3>
+    <h3>Matrix Segunda Ordem</h3>
     <pre><?= print_r($matrixSegundaOrdem, true) ?></pre>
     <h3>Three State Matrix1</h3>
     <pre><?= print_r($three_state_matrix1, true) ?></pre>
