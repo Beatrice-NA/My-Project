@@ -93,6 +93,10 @@ TesteAsset::register($this);
         <li>
           <a href="heuristic-m3">Heuristica M3</a>
         </li>
+        <li>
+          <a href="segunda-ordem">Segunda ordem</a>
+        </li>
+      
       </ul>
     </div>
   </div>

@@ -273,6 +273,7 @@ class HeuristicM3Controller extends Controller
                         // Caso os intervalos estejam subindo
                         // Se a orientação for -1, não tem nenhum registro de subida ou descida salvo previamente
                         // Então, a orientação 1 é adicionada para informar que tem um registro de subida e o contador é incrementado
+                        // Lembrar que: orientação 1 é descida, orientação 0 é subida
                         if ($array_continuos_growth_date['orientation'] == -1) {
                             $array_continuos_growth_date['orientation'] = 1;
                             $array_continuos_growth_date['continuos_growth'] += 1;
@@ -403,7 +404,7 @@ class HeuristicM3Controller extends Controller
                         //fwrite($file, $next_day['date']->toDateTime()->format('d/m/Y') . "\n");
                     }
 
-                    fwrite($file_continuous_growth,"Nada ainda "."\n");
+                    fwrite($file_continuous_growth,""."\n");
                     
 
                     //var_dump($next_day['date']->toDateTime()->format('d/m/Y'));

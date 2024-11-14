@@ -1,28 +1,38 @@
 <?php
-/* @var $predictModel app\models\PredictModel */
-/* @var $form yii\bootstrap\ActiveForm */
-/* @var $consultaModel app\models\ConsultaModel */
 
+use app\models\ConsultaModel;
 use yii\bootstrap\ActiveForm;
 use yii\helpers\Html;
 use yii\jui\DatePicker;
-use yii\helpers\ArrayHelper;
-use app\models\Paper;
 
 ini_set('max_execution_time', 0); //300 seconds = 5 minutes
 ini_set('memory_limit', '-1');
 
-$dateAux = \DateTime::createFromFormat('d/m/YH:i:s', '30/12/201900:00:00');
-$dateAux = Paper::toIsoDate($dateAux->getTimestamp());
+$consultaModel = new ConsultaModel;
 
 ?>
 
 <div class="container">
-    <h2>Previsão do dia seguinte com 3 estados usando CMTD</h2>
-    <p>Data Inicial: Inicio do conjunto de treinamento</p>
-    <p>Data Final: Fim do conjunto de treinamento</p>
-    <hr>
+    <div class="row">
+        <h1>segunda ordem</h1>
+        <p>O objetivo da segunda ordem é para prever a tendência de todos os períodos  </p>
+    </div>
+    <hr/>
+    <div class="row">
+        <h2>Previsão de tendência de grandes períodos usando CMTD 2° ordem</h2>
+        <p>Data Inicial: Primeira data do período a ser previsto</p>
+        <p>Data Final: Última data do período a ser previsto</p>
+        <p>Periodo: Número (inteiro) de meses ou anos que formarão o conjunto de treinamento</p>
+        <p>Métrica: Métrica para criação do conjunto de treinamento</p>
+        <p>Base Média Móvel: Número de elementos usados para o cálculo da média móvel</p>
+    </div>
+</div>
 
+
+
+<hr>
+
+<div class="container">
     <?php $form = ActiveForm::begin(['layout' => 'horizontal']) ?>
 
     <?= $form->field($consultaModel, 'nome')->dropDownList(
@@ -375,30 +385,43 @@ $dateAux = Paper::toIsoDate($dateAux->getTimestamp());
             'WHRL4' => 'WHRL4'
         ],
         [
-            'style' => ['width' => '190px', 'height' => '30px']
+            'style' => ['width' => '100px', 'height' => '30px']
         ]
-        
     ) ?>
 
     <?= $form->field($consultaModel, 'inicio')->widget(DatePicker::className(), [
-            'language' => 'pt-BR',
-            'dateFormat' => 'dd/MM/yyyy'
+        'language' => 'pt-BR',
+        'dateFormat' => 'dd/MM/yyyy'
     ]) ?>
-
 
     <?= $form->field($consultaModel, 'final')->widget(DatePicker::className(), [
-            'language' => 'pt-BR',
-            'dateFormat' => 'dd/MM/yyyy'
+        'language' => 'pt-BR',
+        'dateFormat' => 'dd/MM/yyyy'
     ]) ?>
-    
-    <hr>
+
+
+    <?= $form->field($consultaModel, 'periodo')->textInput([
+        'style' => ['width' => '190px', 'height' => '30px']
+    ]) ?>
+
+
+
+    <?= $form->field($consultaModel, 'metric')->dropDownList(
+        [
+            'month' => 'Meses',
+            'year' => 'Anos'
+        ],
+        [
+            'style' => ['width' => '190px', 'height' => '30px']
+        ]
+    ) ?>
+
 
     <div class="form-group">
-        <div class="col-lg-offset-5">
-            <?= Html::submitButton('Enviar', ['class'=>'btn btn-primary']) ?>
+        <div class="col-lg-offset-6">
+            <?= Html::submitButton('Enviar', ['class' => 'btn btn-primary']) ?>
         </div>
     </div>
 
     <?php $form = ActiveForm::end() ?>
-
 </div>

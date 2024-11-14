@@ -17,12 +17,13 @@ $config = [
         '@cmtdUrl' => '@web/index.php?r=exercicios/cmtd',
         '@cmoUrl' => '@web/index.php?r=exercicios/cmo'
     ],
-    
+
     'controllerMap' => [
         'job-queue' => [
             'class' => \yiicod\jobqueue\commands\JobQueueCommand::class,
-        ]
-     ],
+        ],
+    ],
+
      
     'components' => [
         'request' => [
@@ -87,7 +88,9 @@ $config = [
                 'import-data' => 'import/import-data',
                 'annual-analysis' => 'main/annual-analysis',
                 'join-methods' => 'join/index',
-                'heuristic-m3' => 'heuristic-m3/index'
+                'heuristic-m3' => 'heuristic-m3/index',
+                'segunda-ordem' => 'segunda-ordem/index',
+
             ],
         ],
         
@@ -99,6 +102,7 @@ $config = [
     
     'params' => $params
 ];
+return $config;
 
 if (YII_ENV_DEV) {
     // configuration adjustments for 'dev' environment

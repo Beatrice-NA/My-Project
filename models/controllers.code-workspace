@@ -1,0 +1,37 @@
+{
+	"folders": [
+		{
+			"path": "../config"
+		},
+		{
+			"path": "../controllers"
+		},
+		{
+			"path": "."
+		},
+		{
+			"path": "../views"
+		},
+		{
+			"path": "../web"
+		},
+		{
+			"path": "../data"
+		},
+		{
+			"path": "../runtime"
+		},
+		{
+			"path": "../vendor"
+		},
+		{
+			"path": "../vagrant"
+		},
+		{
+			"path": "../.git"
+		},
+		{
+			"path": "../backup"
+		}
+	]
+}

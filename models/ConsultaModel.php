@@ -22,7 +22,17 @@ class ConsultaModel extends Model
     public $metric;
     public $base;
     public $initial_year;
+    public $qtde_up_down_constants;
+    public $actions;
+    public $paper;
+    //private $initialVector = ["value"];
+    //private $resultVector1;
+    //private $resultVector2;
+    
+    //public $resultVector1;
+    //public $resultVector2;
 
+    
     public function rules()
     {
         return [
@@ -30,7 +40,9 @@ class ConsultaModel extends Model
             [['states_number', 'periodo'], 'integer'],
             [['metric'], 'string'],
             [['inicio', 'final'], 'date', 'format' => 'dd/mm/yyyy'],
-            ['qtde_obs', 'integer']
+            ['qtde_obs', 'integer'],
+            ['qtde_up_down_constants','integer'],
+            ['actions','each','rule' => ['string']],
         ];
     }
 
@@ -39,10 +51,12 @@ class ConsultaModel extends Model
         return [
             'nome' => 'Ação',
             'inicio' => 'Data Inicial',
+            'actions' => 'Ações',
             'final' => 'Data Final',
             'states_number' => 'Quantidade de intervalos',
             'metric' => 'Métrica',
-            'qtde_obs' => 'Quantidade de observações'
+            'qtde_obs' => 'Quantidade de observações',
+            'qtde_up_down_constants' => 'Quantidade de subidas/descidas constantes antes da previsão'
         ];
     }
 
@@ -96,7 +110,7 @@ class ConsultaModel extends Model
 
         return 0;
     }
-
+    
     public static function getThreeState($price, $price_before)
     {
         if ($price > $price_before) {
@@ -189,40 +203,50 @@ class ConsultaModel extends Model
     //Constroi a matriz de transição a partir do conjunto de treinamento
     public function transitionMatrix($paper, $states, $states_number, $state_type)
     {
+        $paper = [
+            ['t_state' => 1],
+            ['t_state' => 2],
+            ['t_state' => 3]
+        ];
+       
+
         $matrix = [[]];
 
         for ($i = 0; $i < $states_number; $i++)
             for ($j = 0; $j < $states_number; $j++)
-                $matrix[$i][$j] = 0;
-
-
+                $matrix[$j][$i] = 0;
+        
         //calculando a quantidade de elementos em cada transição da matriz
-
         for ($i = 0; $i < count($paper) - 1; $i++) {
             $j = $i + 1;
             $matrix[$paper[$i][$state_type] - 1][$paper[$j][$state_type] - 1] += 1;
-        }
-
-        //contagem do ultimo valor do conjunto de treinamento
-
+        }   
+        
+        // Contagem do último valor do conjunto de treinamento
         $matrix[$paper[count($paper) - 1][$state_type] - 1][$paper[count($paper) - 1][$state_type] - 1] += 1;
-
+       
         //construção da matriz de transição $states contem a quantidade de elementos total em cada estado
-        for ($i = 0; $i < $states_number; $i++)
+        for ($i = 0; $i < $states_number; $i++) {
             for ($j = 0; $j < $states_number; $j++) {
-                if ($states[$i] == 0)
-                    $matrix[$i][$j] = 0;
-                else
-                    $matrix[$i][$j] /= $states[$i];
+                 if ($states[$i] == 0){
+                     $matrix[$i][$j] = 0;
+            }else{
+                $matrix[$i][$j] /= $states[$i];
             }
+            
+         }
+                
+        }
+    
         return $matrix;
     }
-
+        
     public function firstPassageTime($matrix)
     {
 
         // Retorna o vetor com os valores que a matriz converge
         $steady_states = $this->getSteadyState($matrix);
+        
 
 
         try {
@@ -739,13 +763,13 @@ class ConsultaModel extends Model
         /* 
             Compara os tres estados atual, com o 3 estados anterior se forem iguais verifico se a previsão real anterior (next_day['t_state'] é menor ou igual a 2, se for ele muda para 3 se não for ele muda para 1
         */
-        if($before_forecast == $current_forecast){
-            if($real_value <= 2){
+        if ($before_forecast == $current_forecast) {
+            if ($real_value <= 2) {
                 return 3;
-            }else{
+            } else {
                 return 1;
             }
-        }else{
+        } else {
             return $current_forecast;
         }
     }
@@ -753,21 +777,197 @@ class ConsultaModel extends Model
     public function forecastHeuristicAfterInflection($before_forecast, $current_forecast, $real_value)
     {
         // Compara as previsões de 3 estados anterior e a atual
-        if($real_value != $current_forecast){
+        if ($real_value != $current_forecast) {
             return $real_value;
-        }else{
+        } else {
             return $current_forecast;
         }
     }
 
     public function searchProbInArrayReturnGreaterProb($arr_three_states_vector)
     {
-        if($arr_three_states_vector[0] > $arr_three_states_vector[2]){
+        if ($arr_three_states_vector[0] > $arr_three_states_vector[2]) {
             return 0;
-        }else if($arr_three_states_vector[2] > $arr_three_states_vector[0]){
+        } else if ($arr_three_states_vector[2] > $arr_three_states_vector[0]) {
             return 2;
-        }else if($arr_three_states_vector[0] == $arr_three_states_vector[2]){
+        } else if ($arr_three_states_vector[0] == $arr_three_states_vector[2]) {
             return 0;
         }
     }
+
+    public function verifyContinuosGrowthIsZero($continuos_growth)
+    {
+        if ($continuos_growth == 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public function compareVerifyWithPrevision($real_value, $prevision)
+    {
+        if ($real_value == $prevision) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+    public function verifyHitThreeTimes($times)
+    {
+        if ($times == 3) {
+            return [true,3];
+        }
+        return [false,$times];
+    }
+
+    //Constroi a matriz de transição de segunda ordem a partir do conjunto de treinamento
+    public function transitionMatrixSegundaOrdem($paper, $states, $states_number, $state_type)
+    {
+        $paper = [
+            ['t_state' => 1],
+            ['t_state' => 2],
+            ['t_state' => 3]
+        ];
+
+         $states = [1, 2, 3];
+         $states_number = 3;
+         $state_type = 't_state';
+
+        $matrixSegundaOrdem = [[]];
+
+        for ($i = 0; $i < $states_number; $i++)
+            for ($j = 0; $j < $states_number; $j++)
+                $matrixSegundaOrdem[$j][$i] = 0;
+                
+
+
+        //calculando a quantidade de elementos em cada transição da matriz
+            for ($i = 0; $i < count($paper) - 2; $i++) {
+                $j = $i + 2; 
+            
+              // Verifica se o índice $i e $j são válidos antes de acessar o array
+                if (isset($paper[$i][$state_type]) && isset($paper[$j][$state_type])) {
+                     $matrixSegundaOrdem[$paper[$i][$state_type] - 1][$paper[$j][$state_type] - 1] += 1;
+                } else {
+                 // Caso haja um problema, podemos registrar um log ou apenas ignorar o caso
+                     Yii::warning("Índices inválidos para \$i ou \$j: \$i=$i, \$j=$j", __METHOD__);
+                }
+            
+        }
+
+        //contagem do ultimo valor do conjunto de treinamento
+
+        $matrixSegundaOrdem[$paper[count($paper) - 1][$state_type] - 1][$paper[count($paper) - 1][$state_type] - 1] += 1;
+        $matrixSegundaOrdem[$paper[count($paper) - 2][$state_type] - 1][$paper[count($paper) - 2][$state_type] - 1] += 1;
+       
+
+        //construção da matriz de transição $states contem a quantidade de elementos total em cada estado
+        $line = count($matrixSegundaOrdem);
+        $cols = count($matrixSegundaOrdem[0]);
+        foreach ($matrixSegundaOrdem as $i => $line){
+            $sumLine = array_sum($line);
+            if ($sumLine > 0) {
+                foreach ($line as $j => $valor){
+                    $matrixSegundaOrdem[$i][$j] = $valor / $sumLine;
+                }
+                   
+            }else{
+                $matrixSegundaOrdem[$i][$j] = 0;
+            }
+        }
+        return $matrixSegundaOrdem;
+   }
+
+   // Constroi o vetor inicial
+   function calculateInitialVector($paper, $states) {
+    $initialVector = [];
+    $cursor_by_price = count($paper);
+
+    // Calcula a média de cada coluna
+    for ($col = 0; $col < count($paper); $col++) {
+        $sumstates[$col] = 0;
+        for ($row = 0; $row < $paper; $row++) {
+            $sumstates[$col] += $paper[$row][$col];
+        }
+        $initialVector[$col] = $sumstates[$col] / $cursor_by_price;
+    }
+
+    return $initialVector;
+    }
+
+    // Define a função transposeVecto
+    public static function transposeVector($initialVector) {
+        $transposedVector = [];
+        foreach ($initialVector as $key => $value) {
+            $transposedVector[] = [$value];
+        }
+        return $transposedVector;
+    }
+
+   
+    function multiplyMatrixByVector($matrixSegundaOrdem, $initialVector) {
+        
+        // Inicializa o vetor de resultado com zeros
+        $resultVector1 = array_fill(0, count($matrixSegundaOrdem), 0);
+    
+        // Verifica se o número de colunas da matriz corresponde ao tamanho do vetor
+        if (count($matrixSegundaOrdem[0]) != count($initialVector)) {
+            throw new Exception("A quantidade de colunas na matriz deve ser igual ao número de elementos no vetor.");
+        }
+    
+        // Multiplicação da matriz pelo vetor transposto
+        
+        foreach ($matrixSegundaOrdem as $row) {
+            $sum = 0;
+            foreach ($row as $col => $value) {
+                $sum += $value * $initialVector[$col];
+            }
+            $resultVector1[] = $sum; // Armazena o resultado para cada linha
+        }
+        return $resultVector1;
+    }
+    
+    function multiplyMatrixByVector2($three_state_matrix1,$initialVector) {
+       
+        // Inicializa o vetor de resultado com zeros
+        $resultVector2 = array_fill(0, count($three_state_matrix1), 0);
+       
+        if (count($three_state_matrix1[0]) != count($initialVector)) {
+            throw new Exception("A quantidade de colunas na matriz deve ser igual ao número de elementos no vetor.");
+        }
+    
+        foreach ($three_state_matrix1 as $row) {
+            $sum = 0;
+            foreach ($row as $col => $value) {
+                $sum += $value * $initialVector[$col];
+            }
+            $resultVector2[] = $sum; // Armazena o resultado para cada linha
+        }
+        return $resultVector2;
+    }
+    
+    
+    //public function calculateW($lambda1, $lambda2) {
+
+     // defini  a função objetivo e as variavéis de decisões w, lambda1, lambda2
+    //$W = INF;
+    //$lambda1 = 1;
+   // $lambda2 = 0;
+    //$initialVector = [];
+
+        // Calcular W para a primeira equação usando initialVector e resultVector1
+       // $W1 = $this->$initialVector[0] - ($this->$resultVector1[0] * $lambda1) - ($this->$resultVector1[1] * $lambda2);
+
+        // Calcular W para a segunda equação usando initialVector e resultVector2
+       // $W2 = $this->$initialVector[1] + ($this->$resultVector2[0] * $lambda1) + ($this->$resultVector2[1] * $lambda2);
+
+
+        // Retornar os valores de W1 e W2 como um array
+        //return [
+           // 'W1' => $W1,
+           // 'W2' => $W2
+        //];
+    //}
+
+   
 }
