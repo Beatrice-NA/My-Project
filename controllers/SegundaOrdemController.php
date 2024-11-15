@@ -31,15 +31,12 @@ class SegundaOrdemController extends Controller
         $resultVector2 = 0;
         $sumstates = 0;
         $paper = 0;
-       // $lambda1 = 0;
-        //$lambda2 = 0;
-        // $W1 = 0;
-         //$W2 = 0;
+        $lambda1 = 0;
+        $lambda2 = 0;
+         $W1 = 0;
+         $W2 = 0;
          $initialVector = 0;
-       // $w = 0;
-        //$l1 = 0;
-        //$l2 = 0;
-        //$initialVector = 0;
+       
 
         // uso do uniqueId
        // $uniqueId = Yii::$app->controller->uniqueId;
@@ -86,14 +83,14 @@ class SegundaOrdemController extends Controller
                 /* Validação .................................................................*/ 
 
                 $matrixSegundaOrdem = $model->transitionMatrixSegundaOrdem($cursor_by_price, $three_states, 3, "t_state");
-                $three_state_matrix1 = $model->transitionMatrix($cursor_by_price, $three_states, 3, "t_state");
+                $three_state_matrix1 = $model->transitionMatrix1($cursor_by_price, $three_states, 3, "t_state");
                 
                 $initialVector = $model->calculateInitialVector($three_state_matrix, $cursor_by_price, $states);
                 $resultVector1 = $model->multiplyMatrixByVector($matrixSegundaOrdem, $initialVector);
                 $resultVector2 = $model->multiplyMatrixByVector2($three_state_matrix1,$initialVector);
                 $transposedVector = $model->transposeVector($initialVector);
                 //$solver = $this->__construct($resultVector1, $resultVector2, $initialVector, $l1, $l2, $w);
-               // $resultados = $model->calculateW($lambda1, $lambda2);
+                $resultados = $model->calculateW($lambda1, $lambda2);
                 //echo "Valor de W na primeira equação: " . $resultados['$W1'] . "\n";
                  //echo "Valor de W na segunda equação: " . $resultados['$W2'] . "\n";
                 
@@ -107,7 +104,7 @@ class SegundaOrdemController extends Controller
                  'transposedVector' => $transposedVector,
                  'resultVector1' => $resultVector1,
                  'resultVector2' => $resultVector2,
-                // 'resultados' => $resultados,
+                 'resultados' => $resultados,
                  
                   
              ]);

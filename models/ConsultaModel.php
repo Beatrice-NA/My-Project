@@ -25,12 +25,10 @@ class ConsultaModel extends Model
     public $qtde_up_down_constants;
     public $actions;
     public $paper;
-    //private $initialVector = ["value"];
-    //private $resultVector1;
-    //private $resultVector2;
+    private $initialVector;
+    private $resultVector1;
+    private $resultVector2;
     
-    //public $resultVector1;
-    //public $resultVector2;
 
     
     public function rules()
@@ -203,15 +201,16 @@ class ConsultaModel extends Model
     //Constroi a matriz de transição a partir do conjunto de treinamento
     public function transitionMatrix($paper, $states, $states_number, $state_type)
     {
+        
         $paper = [
             ['t_state' => 1],
             ['t_state' => 2],
             ['t_state' => 3]
         ];
-       
 
         $matrix = [[]];
 
+         // Contagem de transições e saídas de cada estado
         for ($i = 0; $i < $states_number; $i++)
             for ($j = 0; $j < $states_number; $j++)
                 $matrix[$j][$i] = 0;
@@ -224,12 +223,12 @@ class ConsultaModel extends Model
 
         // Contagem do último valor do conjunto de treinamento
         $matrix[$paper[count($paper) - 1][$state_type] - 1][$paper[count($paper) - 1][$state_type] - 1] += 1;
-       
+
         //construção da matriz de transição $states contem a quantidade de elementos total em cada estado
         for ($i = 0; $i < $states_number; $i++) {
             for ($j = 0; $j < $states_number; $j++) {
                  if ($states[$i] == 0){
-                     $matrix[$i][$j] = 0;
+                    $matrix[$i][$j] = 0;
             }else{
                 $matrix[$i][$j] /= $states[$i];
             }
@@ -819,6 +818,63 @@ class ConsultaModel extends Model
         }
         return [false,$times];
     }
+    //Constroi a matriz de transição a partir do conjunto de treinamento
+    public function transitionMatrix1($paper, $states, $states_number, $state_type)
+    {
+        $paper = [
+            ['t_state' => 1],
+            ['t_state' => 2],
+            ['t_state' => 3]
+        ];
+       
+
+        $matrix = [[]];
+
+        // Calcular a frequência de transições de cada estado
+         $state_counts = array_fill(0, $states_number, 0);
+
+         // Contagem de transições e saídas de cada estado
+        for ($i = 0; $i < $states_number; $i++)
+            for ($j = 0; $j < $states_number; $j++)
+                $matrix[$j][$i] = 0;
+        
+        //calculando a quantidade de elementos em cada transição da matriz
+        for ($i = 0; $i < count($paper) - 1; $i++) {
+            $j = $i + 1;
+           $current_state = $paper[$i][$state_type] - 1;
+           $next_state = $paper[$i + 1][$state_type] - 1;
+
+        // Verificação para saber se os estados estão dentro dos limites
+        if ($current_state >= 0 && $current_state < $states_number && $next_state >= 0 && $next_state < $states_number) {
+            
+            // Contar a transição
+            $matrix[$current_state][$next_state] += 1;
+            $state_counts[$current_state] += 1;
+        }
+    }
+
+    // Adiciona uma auto-transição para o último estado, caso não tenha uma transição de saída
+    $last_state = $paper[count($paper) - 1][$state_type] - 1;
+    $matrix[$last_state][$last_state] += 1;
+    $state_counts[$last_state] += 1;
+
+        // Contagem do último valor do conjunto de treinamento
+        //$matrix[$paper[count($paper) - 1][$state_type] - 1][$paper[count($paper) - 1][$state_type] - 1] += 1;
+
+        // Normalizar a matriz de transição
+        for ($i = 0; $i < $states_number; $i++) {
+            for ($j = 0; $j < $states_number; $j++) {
+                if ($state_counts[$i] > 0) {
+                    $matrix[$i][$j] /= $state_counts[$i];
+                } else {
+                     $matrix[$i][$j] = 0; // Estado sem transições
+                     }
+            }
+        }
+        
+
+    return $matrix;
+}
 
     //Constroi a matriz de transição de segunda ordem a partir do conjunto de treinamento
     public function transitionMatrixSegundaOrdem($paper, $states, $states_number, $state_type)
@@ -878,6 +934,7 @@ class ConsultaModel extends Model
         return $matrixSegundaOrdem;
    }
 
+   
    // Constroi o vetor inicial
    function calculateInitialVector($paper, $states) {
     $initialVector = [];
@@ -891,8 +948,7 @@ class ConsultaModel extends Model
         }
         $initialVector[$col] = $sumstates[$col] / $cursor_by_price;
     }
-
-    return $initialVector;
+      return $initialVector;
     }
 
     // Define a função transposeVecto
@@ -947,27 +1003,29 @@ class ConsultaModel extends Model
     }
     
     
-    //public function calculateW($lambda1, $lambda2) {
+    public function calculateW($lambda1, $lambda2) {
 
-     // defini  a função objetivo e as variavéis de decisões w, lambda1, lambda2
-    //$W = INF;
-    //$lambda1 = 1;
-   // $lambda2 = 0;
-    //$initialVector = [];
+     // defini  a função objetivo e as variavéis de decisões w, lambda1, lambda2 
+    $W = INF;
+    $lambda1 = 1;
+    $lambda2 = 0;
+    $initialVector = [0, 0.33333333333333, 0.66666666666667];
+    $resultVector1 = [0.66666666666667, 0.33333333333333, 0.66666666666667];
+    $resultVector2 = [0.015151515151515, 0, 0.03921568627451];
 
         // Calcular W para a primeira equação usando initialVector e resultVector1
-       // $W1 = $this->$initialVector[0] - ($this->$resultVector1[0] * $lambda1) - ($this->$resultVector1[1] * $lambda2);
+        $W1 = $initialVector[1] - ($resultVector1[0] * $lambda1) - ($resultVector1[1] * $lambda2);
 
         // Calcular W para a segunda equação usando initialVector e resultVector2
-       // $W2 = $this->$initialVector[1] + ($this->$resultVector2[0] * $lambda1) + ($this->$resultVector2[1] * $lambda2);
+        $W2 = $initialVector[1] + ($resultVector2[0] * $lambda1) + ($resultVector2[1] * $lambda2);
 
 
         // Retornar os valores de W1 e W2 como um array
-        //return [
-           // 'W1' => $W1,
-           // 'W2' => $W2
-        //];
-    //}
+        return [
+            'W1' => $W1,
+            'W2' => $W2
+        ];
+    }
 
    
 }

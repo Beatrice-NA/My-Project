@@ -2000,7 +2000,8 @@ class MainController extends Controller
             $three_state_matrix = $model->transitionMatrix($cursor_by_price, $three_states, 3, "t_state");
             $three_state_matrix = $model->transitionMatrixSegundaOrdem($cursor_by_price, $three_states, 3, "t_state"); // Construir a matriz de transição de segunda ordem
             $three_state_vector = $model->predictVector($three_state_matrix, $cursor_by_price, 3, "t_state"); // Construir o vetor de predição
-    
+            
+            
             /* Validação .................................................................*/
             $Matrix = MatrixFactory::create($three_state_matrix);
             return $this->render('result', [

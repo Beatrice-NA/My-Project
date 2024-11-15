@@ -26,6 +26,9 @@
     <?php else: ?>
     <p>O vetor de resultado não foi definido.</p>
     <?php endif; ?>
-
+    <pre>
+    Valor de W na primeira equação: <?= $resultados['W1'] ?><br>
+    Valor de W na segunda equação: <?= $resultados['W2'] ?>
+</pre>
 </body>
 </html>
