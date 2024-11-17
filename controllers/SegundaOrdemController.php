@@ -36,6 +36,15 @@ class SegundaOrdemController extends Controller
          $W1 = 0;
          $W2 = 0;
          $initialVector = 0;
+         $optimalSolution = 0;
+         $solution = 0;
+         $Vector = 0;
+         $states_number = 0;
+         $state_type = 0;
+         $three_state_matrix = 0;
+         $nextStateVector = 0;
+         $three_state_matrix1 = 0;
+         $matrix = 0;
        
 
         // uso do uniqueId
@@ -91,9 +100,14 @@ class SegundaOrdemController extends Controller
                 $transposedVector = $model->transposeVector($initialVector);
                 //$solver = $this->__construct($resultVector1, $resultVector2, $initialVector, $l1, $l2, $w);
                 $resultados = $model->calculateW($lambda1, $lambda2);
-                //echo "Valor de W na primeira equação: " . $resultados['$W1'] . "\n";
-                 //echo "Valor de W na segunda equação: " . $resultados['$W2'] . "\n";
+                 
+                $optimalSolution = $model->setSolution($solution);
+
+                $Vector = $model->PredictionVector($three_state_matrix, $cursor_by_price, 3, "t_state");
+                //$nextStateVector = $model->linearRegressionPredictionVector($cursor_by_price, $three_states, 3, "t_state");
                 
+                    
+            
                 // Cria a matriz com o MathPHP
                 $Matrix = MatrixFactory::create($three_state_matrix);
                 return $this->render('result', [
@@ -105,8 +119,9 @@ class SegundaOrdemController extends Controller
                  'resultVector1' => $resultVector1,
                  'resultVector2' => $resultVector2,
                  'resultados' => $resultados,
-                 
-                  
+                 'optimalSolution' => $optimalSolution,
+                 'Vector' => $Vector,
+                 //'nextStateVector' => $nextStateVector,
              ]);
             }  else{
              // Tratamento de erro se não houver dados suficientes

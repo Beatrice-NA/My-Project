@@ -29,6 +29,11 @@
     <pre>
     Valor de W na primeira equação: <?= $resultados['W1'] ?><br>
     Valor de W na segunda equação: <?= $resultados['W2'] ?>
-</pre>
+    </pre>
+    <h3>optimal Solution</h3>
+    <pre><?= print_r($optimalSolution, true) ?></pre>
+    <h3> Vector</h3>
+    <pre><?= print_r($Vector, true) ?></pre>
+    
 </body>
 </html>
