@@ -1066,59 +1066,23 @@ class ConsultaModel extends Model
 }
 
 
-//public function linearRegressionPredictionVector($three_state_matrix, $Vector= [0, 1, 0])  
-//{
-    // Verifica se a matriz de estados é um array bidimensional não vazio
-    //if (!is_array($three_state_matrix) || count($three_state_matrix) === 0) {
-       // throw new Exception("A matriz de estados deve ser um array bidimensional não vazio.");
-    //}
-    // Verifica se o vetor de estado é um array não vazio
-    //if (!is_array($Vector) || count($Vector) === 0) {
-       // throw new Exception("O vetor de estados deve ser um array unidimensional não vazio.");
-    //}
-
-    // Verifica se a matriz e o vetor têm dimensões compatíveis
-    //$numColumns = is_array($three_state_matrix[0]) ? count($three_state_matrix[0]) : 0;
-    //if ($numColumns !== count($Vector)) {
-        //throw new Exception("A quantidade de colunas na matriz deve ser igual ao número de elementos no vetor.");
-    //}
+// Função para multiplicar a matriz pelo vetor
+public function multiplicatetransitionMatrixactualVector($three_state_matrix, $Vector)  
+{
+    $Vector = [0, 1, 0];
 
     // Inicializa o vetor de resultado
-    //$nextStateVector = [];
-    // Calcula o novo vetor de estado
-    //foreach ($three_state_matrix as $row) {
-       // $sum = 0;
-        //foreach ($row as $col => $value) {
-            //$sum += $value * $Vector[$col];
-       // }
-       // $nextStateVector[] = $sum; // Adiciona o resultado para cada linha
-   // }
-
-   // return $nextStateVector;
-//}
-
-
-
-
-
-    // Transforma o vetor inicial em um objeto de matriz com uma linha
-    //$VectorMatrix = MatrixFactory::create([$Vector]);
-
-    // Multiplica o vetor inicial pela matriz de transição
-    //$nextStateMatrix = $VectorMatrix->multiply($matrix);
-   // $VectorMatrix = [0, 1, 0];
-
-    // Extrai o vetor de probabilidades do próximo dia
-   // $nextStateVector = $nextStateMatrix->getMatrix()[0];
-    // Adiciona depuração para o vetor resultante
-    //echo 'Vetor Resultante: ' . json_encode($nextStateVector) . PHP_EOL;
-    // Verifica o resultado antes de retornar
-    //if (array_sum($nextStateVector) <= 0) {
-       // throw new \Exception('Erro no cálculo: vetor resultante é nulo.');
-    //}
-
-    // Retorna o vetor de previsão do próximo dia
-    //return $nextStateVector;
-//}
+    $result = [];
+    //Calcula o novo vetor de estado
+    for ($i = 0; $i < count($three_state_matrix); $i++) {
+        $sum = 0;
+        for ($j = 0; $j < count($Vector); $j++) {
+            $sum += $three_state_matrix[$i][$j] * $Vector[$j];
+        }
+        $result[] = $sum;
+    }
+    return $result;
+   
+}
    
 }

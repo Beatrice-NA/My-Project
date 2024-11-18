@@ -34,6 +34,8 @@
     <pre><?= print_r($optimalSolution, true) ?></pre>
     <h3> Vector</h3>
     <pre><?= print_r($Vector, true) ?></pre>
+    <h3>Next State Vector</h3>
+    <pre><?= print_r($nextStateVector, true) ?></pre>
     
 </body>
 </html>

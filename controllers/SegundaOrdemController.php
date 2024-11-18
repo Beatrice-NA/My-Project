@@ -104,7 +104,7 @@ class SegundaOrdemController extends Controller
                 $optimalSolution = $model->setSolution($solution);
 
                 $Vector = $model->PredictionVector($three_state_matrix, $cursor_by_price, 3, "t_state");
-                //$nextStateVector = $model->linearRegressionPredictionVector($cursor_by_price, $three_states, 3, "t_state");
+                $nextStateVector = $model->multiplicatetransitionMatrixactualVector($three_state_matrix, $Vector);
                 
                     
             
@@ -121,7 +121,7 @@ class SegundaOrdemController extends Controller
                  'resultados' => $resultados,
                  'optimalSolution' => $optimalSolution,
                  'Vector' => $Vector,
-                 //'nextStateVector' => $nextStateVector,
+                 'nextStateVector' => $nextStateVector,
              ]);
             }  else{
              // Tratamento de erro se não houver dados suficientes
