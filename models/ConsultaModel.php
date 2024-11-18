@@ -852,19 +852,16 @@ class ConsultaModel extends Model
         // Verificação para saber se os estados estão dentro dos limites
         if ($current_state >= 0 && $current_state < $states_number && $next_state >= 0 && $next_state < $states_number) {
             
-            // Contar a transição
+            // Contagem da transição
             $matrix[$current_state][$next_state] += 1;
             $state_counts[$current_state] += 1;
         }
     }
-
-    // Adiciona uma auto-transição para o último estado, caso não tenha uma transição de saída
-    $last_state = $paper[count($paper) - 1][$state_type] - 1;
-    $matrix[$last_state][$last_state] += 1;
-    $state_counts[$last_state] += 1;
-
         // Contagem do último valor do conjunto de treinamento
-        //$matrix[$paper[count($paper) - 1][$state_type] - 1][$paper[count($paper) - 1][$state_type] - 1] += 1;
+        // Adiciona uma auto-transição para o último estado, caso não tenha uma transição de saída
+        $last_state = $paper[count($paper) - 1][$state_type] - 1;
+        $matrix[$last_state][$last_state] += 1;
+        $state_counts[$last_state] += 1;
 
         // Normalizar a matriz de transição
         for ($i = 0; $i < $states_number; $i++) {
@@ -899,14 +896,12 @@ class ConsultaModel extends Model
         for ($i = 0; $i < $states_number; $i++)
             for ($j = 0; $j < $states_number; $j++)
                 $matrixSegundaOrdem[$j][$i] = 0;
-                
-
 
         //calculando a quantidade de elementos em cada transição da matriz
             for ($i = 0; $i < count($paper) - 2; $i++) {
                 $j = $i + 2; 
             
-              // Verifica se o índice $i e $j são válidos antes de acessar o array
+              // Verifica se o índice $i e $j são válidos antes de acessar a array
                 if (isset($paper[$i][$state_type]) && isset($paper[$j][$state_type])) {
                      $matrixSegundaOrdem[$paper[$i][$state_type] - 1][$paper[$j][$state_type] - 1] += 1;
                 } else {
@@ -941,7 +936,7 @@ class ConsultaModel extends Model
 
    
    // Constroi o vetor inicial
-   function calculateInitialVector($paper, $states) {
+   function calculateInitialVector($paper, $cursor_by_price, $states) {
     $initialVector = [];
     $cursor_by_price = count($paper);
 
@@ -1018,10 +1013,10 @@ class ConsultaModel extends Model
     $resultVector1 = [0.66666666666667, 0.33333333333333, 0.66666666666667];
     $resultVector2 = [0.015151515151515, 0, 0.03921568627451];
 
-        // Calcular W para a primeira equação usando initialVector e resultVector1
+        // Calcular W para a primeira equação usando $initialVetor e $resultVector1 da multiplica de matrizes 
         $W1 = $initialVector[1] - ($resultVector1[0] * $lambda1) - ($resultVector1[1] * $lambda2);
 
-        // Calcular W para a segunda equação usando initialVector e resultVector2
+        // Calcular W para a segunda equação usando $initialVector e $resultVector2 da multiplica de matrizes
         $W2 = $initialVector[1] + ($resultVector2[0] * $lambda1) + ($resultVector2[1] * $lambda2);
 
 
