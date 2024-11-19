@@ -823,6 +823,7 @@ class ConsultaModel extends Model
         }
         return [false,$times];
     }
+
     //Constroi a matriz de transição a partir do conjunto de treinamento
     public function transitionMatrix1($paper, $states, $states_number, $state_type)
     {
@@ -858,10 +859,10 @@ class ConsultaModel extends Model
         }
     }
         // Contagem do último valor do conjunto de treinamento
-        // Adiciona uma auto-transição para o último estado, caso não tenha uma transição de saída
+        
         $last_state = $paper[count($paper) - 1][$state_type] - 1;
         $matrix[$last_state][$last_state] += 1;
-        $state_counts[$last_state] += 1;
+        $state_counts[$last_state] += 1; // Adiciona uma auto-transição para o último estado, caso não tenha uma transição de saída
 
         // Normalizar a matriz de transição
         for ($i = 0; $i < $states_number; $i++) {
@@ -873,8 +874,6 @@ class ConsultaModel extends Model
                      }
             }
         }
-        
-
     return $matrix;
 }
 
@@ -901,7 +900,7 @@ class ConsultaModel extends Model
             for ($i = 0; $i < count($paper) - 2; $i++) {
                 $j = $i + 2; 
             
-              // Verifica se o índice $i e $j são válidos antes de acessar a array
+              // Verificação do índice $i e $j se são válidos antes de acessar a array
                 if (isset($paper[$i][$state_type]) && isset($paper[$j][$state_type])) {
                      $matrixSegundaOrdem[$paper[$i][$state_type] - 1][$paper[$j][$state_type] - 1] += 1;
                 } else {
@@ -911,7 +910,7 @@ class ConsultaModel extends Model
             
         }
 
-        //contagem do ultimo valor do conjunto de treinamento
+        //contagem dos ultimos valores do conjunto de treinamento
 
         $matrixSegundaOrdem[$paper[count($paper) - 1][$state_type] - 1][$paper[count($paper) - 1][$state_type] - 1] += 1;
         $matrixSegundaOrdem[$paper[count($paper) - 2][$state_type] - 1][$paper[count($paper) - 2][$state_type] - 1] += 1;
@@ -934,7 +933,6 @@ class ConsultaModel extends Model
         return $matrixSegundaOrdem;
    }
 
-   
    // Constroi o vetor inicial
    function calculateInitialVector($paper, $cursor_by_price, $states) {
     $initialVector = [];
@@ -1059,7 +1057,6 @@ class ConsultaModel extends Model
 
     return $Vector;
 }
-
 
 // Função para multiplicar a matriz pelo vetor
 public function multiplicatetransitionMatrixactualVector($three_state_matrix, $Vector)  

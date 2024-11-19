@@ -106,8 +106,6 @@ class SegundaOrdemController extends Controller
                 $Vector = $model->PredictionVector($three_state_matrix, $cursor_by_price, 3, "t_state");
                 $nextStateVector = $model->multiplicatetransitionMatrixactualVector($three_state_matrix, $Vector);
                 
-                    
-            
                 // Cria a matriz com o MathPHP
                 $Matrix = MatrixFactory::create($three_state_matrix);
                 return $this->render('result', [
