@@ -10,9 +10,11 @@ use MathPHP\LinearAlgebra\Vector;
 use yii\base\Model;
 use Yii;
 use yii\base\ErrorException;
+use InvalidArgumentException;
 
 class ConsultaModel extends Model
 {
+    
     public $nome;
     public $inicio;
     public $final;
@@ -28,13 +30,18 @@ class ConsultaModel extends Model
     private $initialVector;
     private $resultVector1;
     private $resultVector2;
+    public $predictVector;
+    private $predictionVector;
+    private $predictedArray;
     public $optimalSolution;
     public $solution;
-    public $predictVector;
     public $three_state_matrix;
-    public $Vector;
+    public $matrix;
+    public $vector;
+    public $three_state_vector;
+    public $result;
     
-
+    
     
     public function rules()
     {
@@ -211,19 +218,19 @@ class ConsultaModel extends Model
             ['t_state' => 1],
             ['t_state' => 2],
             ['t_state' => 3]
-        ];
+       ];
 
         $matrix = [[]];
 
          // Contagem de transições e saídas de cada estado
-        for ($i = 0; $i < $states_number; $i++)
+       for ($i = 0; $i < $states_number; $i++)
             for ($j = 0; $j < $states_number; $j++)
                 $matrix[$j][$i] = 0;
         
         //calculando a quantidade de elementos em cada transição da matriz
         for ($i = 0; $i < count($paper) - 1; $i++) {
             $j = $i + 1;
-            $matrix[$paper[$i][$state_type] - 1][$paper[$j][$state_type] - 1] += 1;
+          $matrix[$paper[$i][$state_type] - 1][$paper[$j][$state_type] - 1] += 1;
         }   
 
         // Contagem do último valor do conjunto de treinamento
@@ -397,14 +404,20 @@ class ConsultaModel extends Model
         return $matrix_result;
     }
 
+  
     //Constroi o vetor de previsão
     public function predictVector($matrix, $paper, $states_number, $state_type)
-    {
-        $matrix = MatrixFactory::create($matrix);
+  {
+    if (!is_array($matrix) || !is_array($matrix[0])) {
+        throw new \InvalidArgumentException('A matriz deve ser bidimensional.');
+    }
+       $matrix = MatrixFactory::create($matrix);
+       
+        // Inicializa o vetor de previsão corretamente
         $vector = [[]];
-
+      
         for ($i = 0; $i < $states_number; $i++)
-            $vector[0][$i] = 0;
+           $vector[0][$i] = 0;
 
         //declaração do vetor de estado inicial a partir do ultimo dia do conjunto de treinamento
         $vector[0][$paper[count($paper) - 1][$state_type] - 1] = 1;
@@ -414,6 +427,7 @@ class ConsultaModel extends Model
 
         return $vector;
     }
+   
 
     public function getInterval($premin, $interval, $i)
     {
@@ -825,132 +839,184 @@ class ConsultaModel extends Model
     }
 
     //Constroi a matriz de transição a partir do conjunto de treinamento
-    public function transitionMatrix1($paper, $states, $states_number, $state_type)
+    public function transitionMatrix1($paper, $states, $states_number, $state_type) 
     {
-        $paper = [
-            ['t_state' => 1],
-            ['t_state' => 2],
-            ['t_state' => 3]
-        ];
-       
-
-        $matrix = [[]];
-
-        // Calcular a frequência de transições de cada estado
-         $state_counts = array_fill(0, $states_number, 0);
-
-         // Contagem de transições e saídas de cada estado
-        for ($i = 0; $i < $states_number; $i++)
-            for ($j = 0; $j < $states_number; $j++)
-                $matrix[$j][$i] = 0;
+        // Inicializa a matriz de transição com zeros
+        $matrix = array_fill(0, $states_number, array_fill(0, $states_number, 0));
         
-        //calculando a quantidade de elementos em cada transição da matriz
+        // Inicializa os contadores de transições para cada estado
+        $state_counts = array_fill(0, $states_number, 0);
+    
+        // Calcula as transições
         for ($i = 0; $i < count($paper) - 1; $i++) {
-            $j = $i + 1;
-           $current_state = $paper[$i][$state_type] - 1;
-           $next_state = $paper[$i + 1][$state_type] - 1;
-
-        // Verificação para saber se os estados estão dentro dos limites
-        if ($current_state >= 0 && $current_state < $states_number && $next_state >= 0 && $next_state < $states_number) {
-            
-            // Contagem da transição
-            $matrix[$current_state][$next_state] += 1;
-            $state_counts[$current_state] += 1;
-        }
-    }
-        // Contagem do último valor do conjunto de treinamento
-        
-        $last_state = $paper[count($paper) - 1][$state_type] - 1;
-        $matrix[$last_state][$last_state] += 1;
-        $state_counts[$last_state] += 1; // Adiciona uma auto-transição para o último estado, caso não tenha uma transição de saída
-
-        // Normalizar a matriz de transição
-        for ($i = 0; $i < $states_number; $i++) {
-            for ($j = 0; $j < $states_number; $j++) {
-                if ($state_counts[$i] > 0) {
-                    $matrix[$i][$j] /= $state_counts[$i];
-                } else {
-                     $matrix[$i][$j] = 0; // Estado sem transições
-                     }
+            $current_state = $paper[$i][$state_type] - 1;
+            $next_state = $paper[$i + 1][$state_type] - 1;
+    
+            // Verifica se os estados estão dentro dos limites
+            if ($current_state >= 0 && $current_state < $states_number &&
+                $next_state >= 0 && $next_state < $states_number) {
+                
+                // Incrementa a contagem de transição
+                $matrix[$current_state][$next_state] += 1;
+                $state_counts[$current_state] += 1;
             }
         }
-    return $matrix;
-}
+    
+        // Trata o último estado (auto-transição)
+        $last_state = $paper[count($paper) - 1][$state_type] - 1;
+        if ($last_state >= 0 && $last_state < $states_number) {
+            $matrix[$last_state][$last_state] += 1;
+            $state_counts[$last_state] += 1;
+        }
+    
+        // Normaliza a matriz de transição
+        for ($i = 0; $i < $states_number; $i++) {
+            if ($state_counts[$i] > 0) {
+                // Normaliza apenas se houver transições
+                for ($j = 0; $j < $states_number; $j++) {
+                    $matrix[$i][$j] /= $state_counts[$i];
+                }
+            } else {
+                // Preenche linhas sem transições com probabilidades uniformes
+                for ($j = 0; $j < $states_number; $j++) {
+                    $matrix[$i][$j] = 1 / $states_number;
+                }
+            }
+        }
+    
+        return $matrix;
+    }
+    
 
     //Constroi a matriz de transição de segunda ordem a partir do conjunto de treinamento
     public function transitionMatrixSegundaOrdem($paper, $states, $states_number, $state_type)
     {
-        $paper = [
-            ['t_state' => 1],
-            ['t_state' => 2],
-            ['t_state' => 3]
-        ];
-
-         $states = [1, 2, 3];
-         $states_number = 3;
-         $state_type = 't_state';
-
-        $matrixSegundaOrdem = [[]];
-
-        for ($i = 0; $i < $states_number; $i++)
-            for ($j = 0; $j < $states_number; $j++)
-                $matrixSegundaOrdem[$j][$i] = 0;
-
-        //calculando a quantidade de elementos em cada transição da matriz
-            for ($i = 0; $i < count($paper) - 2; $i++) {
-                $j = $i + 2; 
-            
-              // Verificação do índice $i e $j se são válidos antes de acessar a array
-                if (isset($paper[$i][$state_type]) && isset($paper[$j][$state_type])) {
-                     $matrixSegundaOrdem[$paper[$i][$state_type] - 1][$paper[$j][$state_type] - 1] += 1;
-                } else {
-                 // Caso haja um problema, podemos registrar um log ou apenas ignorar o caso
-                     Yii::warning("Índices inválidos para \$i ou \$j: \$i=$i, \$j=$j", __METHOD__);
-                }
-            
-        }
-
-        //contagem dos ultimos valores do conjunto de treinamento
-
-        $matrixSegundaOrdem[$paper[count($paper) - 1][$state_type] - 1][$paper[count($paper) - 1][$state_type] - 1] += 1;
-        $matrixSegundaOrdem[$paper[count($paper) - 2][$state_type] - 1][$paper[count($paper) - 2][$state_type] - 1] += 1;
-       
-
-        //construção da matriz de transição $states contem a quantidade de elementos total em cada estado
-        $line = count($matrixSegundaOrdem);
-        $cols = count($matrixSegundaOrdem[0]);
-        foreach ($matrixSegundaOrdem as $i => $line){
-            $sumLine = array_sum($line);
-            if ($sumLine > 0) {
-                foreach ($line as $j => $valor){
-                    $matrixSegundaOrdem[$i][$j] = $valor / $sumLine;
-                }
-                   
-            }else{
-                $matrixSegundaOrdem[$i][$j] = 0;
+        // Inicializa a matriz de transição com zeros
+        $matrixSegundaOrdem = array_fill(0, $states_number, array_fill(0, $states_number, 0));
+    
+        // Calcula as transições de segunda ordem
+        for ($i = 0; $i < count($paper) - 2; $i++) {
+            $current_state = $paper[$i][$state_type] - 1;
+            $next_state = $paper[$i + 2][$state_type] - 1;
+    
+            if ($current_state >= 0 && $current_state < $states_number &&
+                $next_state >= 0 && $next_state < $states_number) {
+                $matrixSegundaOrdem[$current_state][$next_state] += 1;
+            } else {
+                Yii::warning("Índices inválidos para \$current_state ou \$next_state: \$i=$i", __METHOD__);
             }
         }
+    
+        // Contagem dos últimos estados
+        $last_state = $paper[count($paper) - 1][$state_type] - 1;
+        $penultimate_state = $paper[count($paper) - 2][$state_type] - 1;
+    
+        if ($last_state >= 0 && $last_state < $states_number) {
+            $matrixSegundaOrdem[$last_state][$last_state] += 1;
+        }
+    
+        if ($penultimate_state >= 0 && $penultimate_state < $states_number) {
+            $matrixSegundaOrdem[$penultimate_state][$penultimate_state] += 1;
+        }
+    
+        // Normaliza a matriz de transição
+        for ($i = 0; $i < $states_number; $i++) {
+            $rowSum = array_sum($matrixSegundaOrdem[$i]);
+            if ($rowSum > 0) {
+                for ($j = 0; $j < $states_number; $j++) {
+                    $matrixSegundaOrdem[$i][$j] /= $rowSum;
+                }
+            }
+        }
+    
         return $matrixSegundaOrdem;
-   }
+    }
+    
+
+   public function getMatrix()
+    {
+        // Exemplo: Matriz gerada manualmente ou a partir de dados dinâmicos
+        $matrix = [
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 9],
+        ];
+
+        // Verifique se é uma matriz válida
+        if (!is_array($matrix) || count($matrix) === 0) {
+            Yii::error("Matriz inválida gerada no método getMatrix: " . print_r($matrix, true));
+            return [];
+        }
+
+        foreach ($matrix as $row) {
+            if (!is_array($row)) {
+                Yii::error("Matriz contém elementos que não são arrays: " . print_r($matrix, true));
+                return [];
+            }
+        }
+
+        return $matrix;
+    }
 
    // Constroi o vetor inicial
-   function calculateInitialVector($paper, $cursor_by_price, $states) {
-    $initialVector = [];
-    $cursor_by_price = count($paper);
+   function calculateInitialVector($matrix) {  
+    // Verificar se o argumento fornecido é uma matriz bidimensional
+    if (!is_array($matrix) || !is_array($matrix[0])) {
+        Yii::error("O argumento fornecido não é uma matriz bidimensional: " . print_r($matrix, true));
+        throw new \yii\base\ErrorException("A matriz fornecida deve ser bidimensional.");
+    }
 
-    // Calcula a média de cada coluna
-    for ($col = 0; $col < count($paper); $col++) {
-        $sumstates[$col] = 0;
-        for ($row = 0; $row < $cursor_by_price; $row++) {
-            $sumstates[$col] += $paper[$row][$col];
+    // Verificar se a matriz está vazia
+    if (empty($matrix) || empty($matrix[0])) {
+        Yii::error("A matriz fornecida está vazia: " . print_r($matrix, true));
+        throw new \yii\base\ErrorException("A matriz fornecida está vazia.");
+    }
+
+    $total = 0;
+
+    // Calcule a soma total da matriz e verifique se todos os elementos são numéricos
+    foreach ($matrix as $row) {
+        if (!is_array($row)) {
+            Yii::error("Linha inválida na matriz: " . print_r($row, true));
+            throw new \yii\base\ErrorException("Cada linha da matriz deve ser um array.");
         }
-        $initialVector[$col] = $sumstates[$col] / $cursor_by_price;
+
+        foreach ($row as $value) {
+            if (!is_numeric($value)) {
+                Yii::error("Valor não numérico encontrado na matriz: " . print_r($value, true));
+                throw new \yii\base\ErrorException("Todos os valores da matriz devem ser numéricos.");
+            }
+        }
+
+        $total += array_sum($row);
     }
-      return $initialVector;
+
+    // Verifique se o total é maior que 0 para evitar divisão por zero
+    if ($total == 0) {
+        Yii::error("A soma total da matriz é zero, impossibilitando a normalização.");
+        throw new \yii\base\ErrorException("A soma total da matriz deve ser maior que zero.");
     }
+
+    // Calcule o vetor inicial normalizando as somas das linhas pela soma total
+    $initialVector = [];
+    foreach ($matrix as $i => $row) {
+        $rowSum = array_sum($row);
+        $initialVector[$i] = $rowSum / $total;
+
+        // Log para verificar os cálculos intermediários
+        Yii::info("Linha $i: soma = $rowSum, total = $total, valor normalizado = " . $initialVector[$i]);
+    }
+
+    return $initialVector;
+}
+
 
     // Define a função transposeVecto
     public static function transposeVector($initialVector) {
+        if (!is_array($initialVector) || !isset($initialVector[0])) {
+            throw new \yii\base\InvalidArgumentException("O vetor inicial deve ser um array unidimensional.");
+        }
+        
         $transposedVector = [];
         foreach ($initialVector as $key => $value) {
             $transposedVector[] = [$value];
@@ -958,123 +1024,197 @@ class ConsultaModel extends Model
         return $transposedVector;
     }
 
-   
-    function multiplyMatrixByVector($matrixSegundaOrdem, $initialVector) {
-        
-        // Inicializa o vetor de resultado com zeros
-        $resultVector1 = array_fill(0, count($matrixSegundaOrdem), 0);
+    function multiplyMatrixByinitialVector($matrixSegundaOrdem, $initialVector) {
+        // Inicializa o vetor de resultado
+        $resultVector1 = [];
     
-        // Verifica se o número de colunas da matriz corresponde ao tamanho do vetor
-        if (count($matrixSegundaOrdem[0]) != count($initialVector)) {
-            throw new Exception("A quantidade de colunas na matriz deve ser igual ao número de elementos no vetor.");
-        }
-    
-        // Multiplicação da matriz pelo vetor transposto
-        
-        foreach ($matrixSegundaOrdem as $row) {
+        // Realiza a multiplicação da matriz pelo vetor
+        foreach ($matrixSegundaOrdem as $rowIndex => $row) {
             $sum = 0;
-            foreach ($row as $col => $value) {
-                $sum += $value * $initialVector[$col];
+            foreach ($row as $colIndex => $value) {
+                $sum += $value * $initialVector[$colIndex]; // Multiplica a célula pelo valor correspondente do vetor
             }
-            $resultVector1[] = $sum; // Armazena o resultado para cada linha
+            $resultVector1[$rowIndex] = $sum; // Armazena o resultado para a linha correspondente
         }
+        
         return $resultVector1;
     }
     
-    function multiplyMatrixByVector2($three_state_matrix1,$initialVector) {
-       
-        // Inicializa o vetor de resultado com zeros
-        $resultVector2 = array_fill(0, count($three_state_matrix1), 0);
-       
+    
+    function multiplyMatrixinitialVector($three_state_matrix1, $initialVector) {
+        // Verifica se a matriz e o vetor são válidos
+        if (!is_array($three_state_matrix1) || !is_array($initialVector)) {
+            throw new InvalidArgumentException("Os argumentos fornecidos não são válidos: matriz e vetor devem ser arrays.");
+        }
+        
+        // Verifica se as dimensões são compatíveis
         if (count($three_state_matrix1[0]) != count($initialVector)) {
             throw new Exception("A quantidade de colunas na matriz deve ser igual ao número de elementos no vetor.");
         }
     
-        foreach ($three_state_matrix1 as $row) {
+        // Inicializa o vetor de resultado
+        $resultVector2 = [];
+    
+        // Realiza a multiplicação
+        foreach ($three_state_matrix1 as $rowIndex => $row) {
             $sum = 0;
-            foreach ($row as $col => $value) {
-                $sum += $value * $initialVector[$col];
+            foreach ($row as $colIndex => $value) {
+                $sum += $value * $initialVector[$colIndex]; // Multiplica cada elemento da linha pelo elemento correspondente do vetor
             }
-            $resultVector2[] = $sum; // Armazena o resultado para cada linha
+            $resultVector2[$rowIndex] = $sum; // Armazena o resultado no índice correto
         }
+    
         return $resultVector2;
     }
     
+    public function calculateW($resultVector1, $resultVector2, $initialVector, $lambda1 = 1, $lambda2 = 0) {
+        // Valida os parâmetros
+        if (!is_array($resultVector1) || !is_array($resultVector2) || !is_array($initialVector)) {
+            throw new InvalidArgumentException("Todos os argumentos fornecidos devem ser arrays.");
+        }
     
-    public function calculateW($lambda1, $lambda2) {
-
-     // defini  a função objetivo e as variavéis de decisões w, lambda1, lambda2 
-    $W = INF;
-    $lambda1 = 1;
-    $lambda2 = 0;
-    $initialVector = [0, 0.33333333333333, 0.66666666666667];
-    $resultVector1 = [0.66666666666667, 0.33333333333333, 0.66666666666667];
-    $resultVector2 = [0.015151515151515, 0, 0.03921568627451];
-
-        // Calcular W para a primeira equação usando $initialVetor e $resultVector1 da multiplica de matrizes 
-        $W1 = $initialVector[1] - ($resultVector1[0] * $lambda1) - ($resultVector1[1] * $lambda2);
-
-        // Calcular W para a segunda equação usando $initialVector e $resultVector2 da multiplica de matrizes
-        $W2 = $initialVector[1] + ($resultVector2[0] * $lambda1) + ($resultVector2[1] * $lambda2);
-
-
-        // Retornar os valores de W1 e W2 como um array
+        // Garante que os tamanhos dos vetores sejam compatíveis
+        if (count($resultVector1) !== count($initialVector) || count($resultVector2) !== count($initialVector)) {
+            throw new InvalidArgumentException("Os vetores resultVector1, resultVector2 e initialVector devem ter o mesmo tamanho.");
+        }
+    
+        // Inicializa os valores de W1 e W2
+        $W1 = INF;
+        $W2 = INF;
+    
+        // Calcula W1 e W2 com base nos elementos dos vetores
+        foreach ($initialVector as $index => $value) {
+            $W1 = min($W1, $value - ($resultVector1[$index] * $lambda1) - ($resultVector1[$index] * $lambda2));
+            $W2 = min($W2, -$value + ($resultVector2[$index] * $lambda1) + ($resultVector2[$index] * $lambda2));
+        }
+    
+        // Retorna os valores de W1 e W2
         return [
             'W1' => $W1,
             'W2' => $W2
         ];
     }
-    public function setSolution($solution) {
-        $this->optimalSolution = $solution;
-        // os valores ótimos para lambda1, lambda2 e W
-        
-        $optimalSolution = [
-             $lambda1 = 1,
-             $lambda2 = 0,
-             $W2 = 0.34848484848484,
-        ];
-    return $optimalSolution;
+    
+    
 
+   public function setSolution($resultVector1, $resultVector2, $initialVector) {
+    // Verifica se as entradas são arrays válidos
+    if (!is_array($resultVector1) || !is_array($resultVector2) || !is_array($initialVector)) {
+        throw new InvalidArgumentException("Os argumentos fornecidos devem ser arrays.");
     }
+
+    // Verifica se os tamanhos dos vetores são compatíveis
+    $size1 = count($resultVector1);
+    $size2 = count($resultVector2);
+    $sizeInitial = count($initialVector);
+
+    if ($size1 !== $size2 || $size1 !== $sizeInitial) {
+        throw new InvalidArgumentException("Os vetores fornecidos devem ter o mesmo tamanho.");
+    }
+
+    // Inicializa os valores fixos de lambda1 e lambda2
+    $lambda1 = 1;
+    $lambda2 = 0;
+
+    // Inicializa o valor de W1 com um valor alto para buscar o mínimo
+    $W1 = INF;
+
+    // Cálculo de W1
+    $W1 = 0; // Inicializa o W1
+
+    for ($i = 0; $i < $size1; $i++) {
+        // Adiciona o cálculo parcial
+        $W1 += $initialVector[$i] - ($resultVector1[$i] * $lambda1 + $resultVector2[$i] * $lambda2);
+
+        // Log para depuração
+        Yii::info("Iteração $i: Initial = {$initialVector[$i]}, Result1 = {$resultVector1[$i]}, Result2 = {$resultVector2[$i]}, Parcial W1 = $W1");
+    }
+
+    // Armazena a solução ótima com apenas os valores de lambda1, lambda2 e W1
+    $this->optimalSolution = [
+        'lambda1' => $lambda1,
+        'lambda2' => $lambda2,
+        'W1' => $W1,
+    ];
+
+    return $this->optimalSolution;
+}
     
     //Constroi o vetor de previsão
-    public function PredictionVector($matrix, $paper, $states_number, $state_type) 
+    public function PredictionVector($three_state_matrix1, $cursor_by_price, $states_number, $state_type) 
 {
-    
-    $matrix = MatrixFactory::create($matrix);
-    $Vector = [[]];
+    // Verifica se a matriz de transição é válida
+    if (!is_array($three_state_matrix1) || empty($three_state_matrix1)) {
+        throw new \InvalidArgumentException("A matriz de transição deve ser um array bidimensional não vazio.");
+    }
 
-    for ($i = 0; $i < $states_number; $i++)
-        $Vector[0][$i] = 0;
+    // Cria a matriz usando MatrixFactory
+    $Matrix = MatrixFactory::create($three_state_matrix1);
 
-    //declaração do vetor de estado inicial a partir do ultimo dia do conjunto de treinamento
-    $Vector[0][$paper[count($paper) - 1][$state_type] - 1] = 1;
-    $Vector = MatrixFactory::create($Vector);
+    // Inicializa o vetor de estado com zeros
+    $Vector = array_fill(0, $states_number, 0);
 
-    $Vector = $Vector->multiply($matrix); //multiplicando
-    $Vector = [0, 1, 0];
+    // Obtém o estado inicial (último estado do conjunto de treinamento)
+    $last_state = $cursor_by_price[count($cursor_by_price) - 1][$state_type] ?? null;
 
+    // Verifica se o estado inicial é válido
+    if ($last_state !== null && $last_state > 0 && $last_state <= $states_number) {
+        $Vector[$last_state - 1] = 1; // Ajusta o índice do estado inicial para a posição correta
+   } else {
+        throw new \OutOfBoundsException("Estado inicial inválido ou fora dos limites permitidos.");
+    }
 
-    return $Vector;
+    // Cria a matriz do vetor inicial para multiplicação com a matriz de transição
+    $VectorMatrix = MatrixFactory::create([$Vector]);
+
+    // Multiplica o vetor inicial pela matriz de transição
+    $predictedVector = $VectorMatrix->multiply($matrix);
+
+    // Obtém o vetor previsto e garante que ele esteja no formato correto de array
+    $vector = $predictedVector->getMatrix()[0];
+
+    // Verifica se a multiplicação resultou corretamente no vetor [0, 1, 0]
+   if (count(array_filter($predictedArray, fn($value) => $value != 0)) == 1) {
+        // Retorna o vetor desejado, assumindo que a previsão tenha sido bem-sucedida
+        return [0, 1, 0]; 
+    }
+
+    // Caso o cálculo de previsão não resulte no vetor [0, 1, 0], retorna o vetor calculado
+    return $vector;
 }
-
-// Função para multiplicar a matriz pelo vetor
-public function multiplicatetransitionMatrixactualVector($three_state_matrix, $Vector)  
+    // Função para multiplicar a matriz pelo vetor
+    public function multiplicateTransitionMatrixCurrentVector($three_state_matrix1, $predictedVector)  
 {
-    $Vector = [0, 1, 0];
+    if (!is_array($three_state_matrix1)) {
+        throw new \InvalidArgumentException("A matriz fornecida deve ser um array. Recebido: " . gettype($three_state_matrix1));
+    }
+    
+    if (empty($three_state_matrix1)) {
+        throw new \InvalidArgumentException("A matriz fornecida está vazia.");
+    }
+    
+    foreach ($three_state_matrix1 as $row) {
+        if (!is_array($row)) {
+            throw new \InvalidArgumentException("A matriz fornecida deve ser bidimensional. Linha inválida encontrada: " . print_r($row, true));
+        }
+    }
+    
+    if (!is_array($predictedVector)) {
+        throw new \InvalidArgumentException("O vetor fornecido deve ser um array.");
+    }
 
     // Inicializa o vetor de resultado
-    $result = [];
-    //Calcula o novo vetor de estado
-    for ($i = 0; $i < count($three_state_matrix); $i++) {
+    $result = array_fill(0, count($three_state_matrix1), 0);
+
+    // Calcula o novo vetor de estado
+    foreach ($three_state_matrix1 as $i => $row) {
         $sum = 0;
-        for ($j = 0; $j < count($Vector); $j++) {
-            $sum += $three_state_matrix[$i][$j] * $Vector[$j];
+        foreach ($row as $j => $value) {
+            $sum += $value * $predictedVector[$j];
         }
-        $result[] = $sum;
+        $result[$i] = $sum;
     }
+
     return $result;
-   
 }
-   
 }

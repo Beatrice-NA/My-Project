@@ -26,16 +26,14 @@
     <?php else: ?>
     <p>O vetor de resultado não foi definido.</p>
     <?php endif; ?>
-    <pre>
-    Valor de W na primeira equação: <?= $resultados['W1'] ?><br>
-    Valor de W na segunda equação: <?= $resultados['W2'] ?>
-    </pre>
+    <h3>valuesW</h3>
+    <pre><?= print_r($valuesW, true) ?></pre>
     <h3>optimal Solution</h3>
     <pre><?= print_r($optimalSolution, true) ?></pre>
-    <h3> Vector</h3>
-    <pre><?= print_r($Vector, true) ?></pre>
-    <h3>Next State Vector</h3>
-    <pre><?= print_r($nextStateVector, true) ?></pre>
+    <h3> vector</h3>
+    <pre><?= print_r($vector, true) ?></pre>
+    <h3>result</h3>
+    <pre><?= print_r($result, true) ?></pre>
     
 </body>
 </html>

@@ -33,23 +33,26 @@ class SegundaOrdemController extends Controller
         $paper = 0;
         $lambda1 = 0;
         $lambda2 = 0;
-         $W1 = 0;
-         $W2 = 0;
-         $initialVector = 0;
-         $optimalSolution = 0;
-         $solution = 0;
-         $Vector = 0;
-         $states_number = 0;
-         $state_type = 0;
-         $three_state_matrix = 0;
-         $nextStateVector = 0;
-         $three_state_matrix1 = 0;
-         $matrix = 0;
+        $W1 = 0;
+        $W2 = 0;
+        $initialVector = 0;
+        $optimalSolution = 0;
+        $solution = 0;
+        $Vector = 0;
+        $states_number = 0;
+        $state_type = 0;
+        $three_state_matrix = 0;
+        $nextStateVector = 0;
+        $three_state_matrix1 = 0;
+        $matrix = 0;
+        $valuesW = 0;
+        $vector = 0;
+        $result = 0;
        
 
         // uso do uniqueId
-       // $uniqueId = Yii::$app->controller->uniqueId;
-        //Yii::info("O uniqueId do controller atual é: $uniqueId");
+       $uniqueId = Yii::$app->controller->uniqueId;
+        Yii::info("O uniqueId do controller atual é: $uniqueId");
 
 
         if ($model->load($post) && $model->validate()) {
@@ -69,7 +72,7 @@ class SegundaOrdemController extends Controller
             $action_name = $model->nome;
     
             // Obtendo dados do modelo
-            $cursor_by_price = $model->getData($action_name, $start, $final);
+           $cursor_by_price = $model->getData($action_name, $start, $final);
             $consultas = count($cursor_by_price);
 
             if (count($cursor_by_price) > 1){
@@ -85,50 +88,52 @@ class SegundaOrdemController extends Controller
                     }
                 }
             
-                $three_state_matrix = $model->transitionMatrix($cursor_by_price, $three_states, 3, "t_state");
-                $three_state_matrix = $model->transitionMatrixSegundaOrdem($cursor_by_price, $three_states, 3, "t_state"); // Construir a matriz de transição de segunda ordem
-                $three_state_vector = $model->predictVector($three_state_matrix, $cursor_by_price, 3, "t_state"); // Construir o vetor de predição
+                //$three_state_matrix = $model->transitionMatrix($cursor_by_price, $three_states, 3, "t_state");
+                //$three_state_matrix = $model->transitionMatrixSegundaOrdem($cursor_by_price, $three_states, 3, "t_state"); // Construir a matriz de transição de segunda ordem
+               // $three_state_vector = $model->predictVector($three_state_matrix, $cursor_by_price, 3, "t_state"); // Construir o vetor de predição
         
                 /* Validação .................................................................*/ 
 
-                $matrixSegundaOrdem = $model->transitionMatrixSegundaOrdem($cursor_by_price, $three_states, 3, "t_state");
-                $three_state_matrix1 = $model->transitionMatrix1($cursor_by_price, $three_states, 3, "t_state");
-                
-                $initialVector = $model->calculateInitialVector($three_state_matrix, $cursor_by_price, $states);
-                $resultVector1 = $model->multiplyMatrixByVector($matrixSegundaOrdem, $initialVector);
-                $resultVector2 = $model->multiplyMatrixByVector2($three_state_matrix1,$initialVector);
-                $transposedVector = $model->transposeVector($initialVector);
-                //$solver = $this->__construct($resultVector1, $resultVector2, $initialVector, $l1, $l2, $w);
-                $resultados = $model->calculateW($lambda1, $lambda2);
-                 
-                $optimalSolution = $model->setSolution($solution);
+                $matrixSegundaOrdem = $model->transitionMatrixSegundaOrdem($cursor_by_price, $three_states, 3, "t_state") ?? [];
+            $three_state_matrix1 = $model->transitionMatrix1($cursor_by_price, $three_states, 3, "t_state") ?? [];
+            $matrix = $model->getMatrix();
 
-                $Vector = $model->PredictionVector($three_state_matrix, $cursor_by_price, 3, "t_state");
-                $nextStateVector = $model->multiplicatetransitionMatrixactualVector($three_state_matrix, $Vector);
-                
+        try {
+            $initialVector = $model->calculateInitialVector($matrix);
+            $resultVector1 = $model->multiplyMatrixByinitialVector($matrixSegundaOrdem, $initialVector);
+            $resultVector2 = $model->multiplyMatrixByinitialVector($three_state_matrix1, $initialVector);
+            $transposedVector = $model->transposeVector($initialVector);
+            $valuesW = $model->calculateW($resultVector1, $resultVector2, $initialVector, $lambda1, $lambda2);
+            $optimalSolution = $model->setSolution($resultVector1, $resultVector2, $initialVector);
+            $vector = $model->PredictionVector($three_state_matrix1, $cursor_by_price, $states_number, $state_type);
+            $result = $model->multiplicateTransitionMatrixCurrentVector($three_state_matrix1, $predictedVector);
+        } catch (\Exception $e) {
+            Yii::error("Erro no processamento: " . $e->getMessage());
+        }
+                 
                 // Cria a matriz com o MathPHP
-                $Matrix = MatrixFactory::create($three_state_matrix);
-                return $this->render('result', [
+                $Matrix = MatrixFactory::create($three_state_matrix1);
+                 return $this->render('result', [
                 'matrixSegundaOrdem' =>  $matrixSegundaOrdem,
-                 'vector' => $three_state_vector,
+                 //'vector' => $three_state_vector,
                  'three_state_matrix1' => $three_state_matrix1,
                  'initialVector' => $initialVector,
                  'transposedVector' => $transposedVector,
                  'resultVector1' => $resultVector1,
                  'resultVector2' => $resultVector2,
-                 'resultados' => $resultados,
+                 'valuesW' => $valuesW,
                  'optimalSolution' => $optimalSolution,
-                 'Vector' => $Vector,
-                 'nextStateVector' => $nextStateVector,
+                 'vector' => $vector,
+                 'result' => $result,
              ]);
             }  else{
-             // Tratamento de erro se não houver dados suficientes
+              //Tratamento de erro se não houver dados suficientes
                 Yii::$app->session->setFlash('error', 'Conjunto de dados insuficiente para calcular.');
                 return $this->redirect(['home']);
         }
     }else {
         return $this->render('home');
-        }
+       }
     }
 
 }  
