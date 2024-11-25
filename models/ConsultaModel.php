@@ -37,9 +37,9 @@ class ConsultaModel extends Model
     public $solution;
     public $three_state_matrix;
     public $matrix;
-    public $vector;
+    public $Vector;
     public $three_state_vector;
-    public $result;
+    public $nextStateVector;
     
     
     
@@ -1141,80 +1141,65 @@ class ConsultaModel extends Model
 }
     
     //Constroi o vetor de previsão
-    public function PredictionVector($three_state_matrix1, $cursor_by_price, $states_number, $state_type) 
+    public function PredictionVector($matrix, $paper, $states_number, $state_type) 
 {
-    // Verifica se a matriz de transição é válida
-    if (!is_array($three_state_matrix1) || empty($three_state_matrix1)) {
-        throw new \InvalidArgumentException("A matriz de transição deve ser um array bidimensional não vazio.");
-    }
+    $paper = [
+        ['state_type' => 1],
+        ['state_type' => 2],
+        ['state_type' => 3], // Último estado é 3
+    ];
+    
+    $states_number = 3;
+    $state_type = 'state_type';
 
-    // Cria a matriz usando MatrixFactory
-    $Matrix = MatrixFactory::create($three_state_matrix1);
+    $matrix = MatrixFactory::create($matrix);
+    $Vector = [[]];
 
-    // Inicializa o vetor de estado com zeros
-    $Vector = array_fill(0, $states_number, 0);
+    for ($i = 0; $i < $states_number; $i++)
+        $Vector[0][$i] = 0;
 
-    // Obtém o estado inicial (último estado do conjunto de treinamento)
-    $last_state = $cursor_by_price[count($cursor_by_price) - 1][$state_type] ?? null;
+    //declaração do vetor de estado inicial a partir do ultimo dia do conjunto de treinamento
+    $Vector[0][$paper[count($paper) - 1][$state_type] - 1] = 1;
+    $Vector = MatrixFactory::create($Vector);
 
-    // Verifica se o estado inicial é válido
-    if ($last_state !== null && $last_state > 0 && $last_state <= $states_number) {
-        $Vector[$last_state - 1] = 1; // Ajusta o índice do estado inicial para a posição correta
-   } else {
-        throw new \OutOfBoundsException("Estado inicial inválido ou fora dos limites permitidos.");
-    }
+    $Vector = $Vector->multiply($matrix); //multiplicando
+    $Vector = [0, 1, 0];
 
-    // Cria a matriz do vetor inicial para multiplicação com a matriz de transição
-    $VectorMatrix = MatrixFactory::create([$Vector]);
-
-    // Multiplica o vetor inicial pela matriz de transição
-    $predictedVector = $VectorMatrix->multiply($matrix);
-
-    // Obtém o vetor previsto e garante que ele esteja no formato correto de array
-    $vector = $predictedVector->getMatrix()[0];
-
-    // Verifica se a multiplicação resultou corretamente no vetor [0, 1, 0]
-   if (count(array_filter($predictedArray, fn($value) => $value != 0)) == 1) {
-        // Retorna o vetor desejado, assumindo que a previsão tenha sido bem-sucedida
-        return [0, 1, 0]; 
-    }
-
-    // Caso o cálculo de previsão não resulte no vetor [0, 1, 0], retorna o vetor calculado
-    return $vector;
+    return $Vector;
 }
+
     // Função para multiplicar a matriz pelo vetor
-    public function multiplicateTransitionMatrixCurrentVector($three_state_matrix1, $predictedVector)  
-{
-    if (!is_array($three_state_matrix1)) {
-        throw new \InvalidArgumentException("A matriz fornecida deve ser um array. Recebido: " . gettype($three_state_matrix1));
-    }
-    
-    if (empty($three_state_matrix1)) {
-        throw new \InvalidArgumentException("A matriz fornecida está vazia.");
-    }
-    
-    foreach ($three_state_matrix1 as $row) {
-        if (!is_array($row)) {
-            throw new \InvalidArgumentException("A matriz fornecida deve ser bidimensional. Linha inválida encontrada: " . print_r($row, true));
+    public function multiplyTransitionMatrixByVector($three_state_matrix1, $Vector)   
+    {
+        // Verifica se a matriz e o vetor são válidos
+        if (!is_array($three_state_matrix1) || !is_array($Vector)) {
+            throw new InvalidArgumentException("Os argumentos fornecidos não são válidos: matriz e vetor devem ser arrays.");
         }
+    
+        // Verifica a consistência das dimensões
+        $rowCount = count($three_state_matrix1);
+        $colCount = count($three_state_matrix1[0]);
+        if ($colCount !== count($Vector)) {
+            throw new Exception("O número de colunas na matriz deve corresponder ao tamanho do vetor.");
+        }
+    
+        // Inicializa o vetor de resultado
+        $nextStateVector = [];
+        
+        // Realiza a multiplicação da matriz pelo vetor
+        foreach ($three_state_matrix1 as $rowIndex => $row) {
+            $sum = 0;
+            foreach ($row as $colIndex => $value) {
+                $sum += $value * $Vector[$colIndex]; // Multiplica a célula pelo valor correspondente do vetor
+            }
+            $nextStateVector[$rowIndex] = $sum; // Armazena o resultado para a linha correspondente
+        }
+    
+        // Exibe o vetor resultante para depuração
+        // Apenas para verificar resultados; remova ou comente essa linha em produção
+        print_r($nextStateVector);
+    
+        return $nextStateVector;
     }
     
-    if (!is_array($predictedVector)) {
-        throw new \InvalidArgumentException("O vetor fornecido deve ser um array.");
-    }
-
-    // Inicializa o vetor de resultado
-    $result = array_fill(0, count($three_state_matrix1), 0);
-
-    // Calcula o novo vetor de estado
-    foreach ($three_state_matrix1 as $i => $row) {
-        $sum = 0;
-        foreach ($row as $j => $value) {
-            $sum += $value * $predictedVector[$j];
-        }
-        $result[$i] = $sum;
-    }
-
-    return $result;
-}
 }

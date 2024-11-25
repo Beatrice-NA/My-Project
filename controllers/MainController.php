@@ -1642,10 +1642,10 @@ class MainController extends Controller
     $transposedVector = [];
     $resultVector1 = [];
     $resultVector2 = [];
-    $result = [];
+    $nextStateVector = [];
     $valuesW = [];
     $three_state_matrix1 = [];
-    $vector = [];
+    $Vector = [];
 
     if ($model->load($post) && $model->validate() && $model->periodo) {
         $start = \DateTime::createFromFormat('d/m/YH:i:s', $model->inicio . '24:00:00')->modify('-1 day');
@@ -1682,15 +1682,15 @@ class MainController extends Controller
             //$W1 = $model->calculateW1($resultVector1, $resultVector2, $initialVector, $lambda1, $lambda2);
             $valuesW = $model->calculateW($resultVector1, $resultVector2, $initialVector, $lambda1, $lambda2);
             $optimalSolution = $model->setSolution($resultVector1, $resultVector2, $initialVector);
-            $vector = $model->PredictionVector($three_state_matrix1, $cursor_by_price, $states_number, $state_type);
-            $result = $model->multiplicateTransitionMatrixCurrentVector($three_state_matrix1, $predictedVector);
+            $Vector = $model->PredictionVector($three_state_matrix1, $cursor_by_price, $states_number, $state_type);
+            $nextStateVector = $model->multiplicateTransitionMatrixCurrentVector($three_state_matrix1, $Vector);
         } catch (\Exception $e) {
             Yii::error("Erro no processamento: " . $e->getMessage());
         }
 
         return $this->render('result-segunda-ordem-test1', compact(
             'matrixSegundaOrdem', 'three_state_matrix1', 'initialVector',
-            'transposedVector', 'resultVector1', 'resultVector2', 'valuesW', 'optimalSolution', 'vector', 'result'
+            'transposedVector', 'resultVector1', 'resultVector2', 'valuesW', 'optimalSolution', 'Vector', 'nextStateVector'
         ));
     }
 

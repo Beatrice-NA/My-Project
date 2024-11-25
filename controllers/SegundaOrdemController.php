@@ -46,8 +46,8 @@ class SegundaOrdemController extends Controller
         $three_state_matrix1 = 0;
         $matrix = 0;
         $valuesW = 0;
-        $vector = 0;
-        $result = 0;
+        $Vector = 0;
+        $nextStateVector = 0;
        
 
         // uso do uniqueId
@@ -105,8 +105,8 @@ class SegundaOrdemController extends Controller
             $transposedVector = $model->transposeVector($initialVector);
             $valuesW = $model->calculateW($resultVector1, $resultVector2, $initialVector, $lambda1, $lambda2);
             $optimalSolution = $model->setSolution($resultVector1, $resultVector2, $initialVector);
-            $vector = $model->PredictionVector($three_state_matrix1, $cursor_by_price, $states_number, $state_type);
-            $result = $model->multiplicateTransitionMatrixCurrentVector($three_state_matrix1, $predictedVector);
+            $Vector = $model->PredictionVector($three_state_matrix1, $cursor_by_price, $states_number, $state_type);
+            $nextStateVector = $model->multiplicateTransitionMatrixCurrentVector($three_state_matrix1, $Vector);
         } catch (\Exception $e) {
             Yii::error("Erro no processamento: " . $e->getMessage());
         }
@@ -123,8 +123,8 @@ class SegundaOrdemController extends Controller
                  'resultVector2' => $resultVector2,
                  'valuesW' => $valuesW,
                  'optimalSolution' => $optimalSolution,
-                 'vector' => $vector,
-                 'result' => $result,
+                 'Vector' => $Vector,
+                 'nextStateVector' => $nextStateVector,
              ]);
             }  else{
               //Tratamento de erro se não houver dados suficientes
