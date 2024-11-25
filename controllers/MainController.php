@@ -1642,10 +1642,10 @@ class MainController extends Controller
     $transposedVector = [];
     $resultVector1 = [];
     $resultVector2 = [];
-    $nextStateVector = [];
+    $nextVector = [];
     $valuesW = [];
     $three_state_matrix1 = [];
-    $Vector = [];
+    $currentVector = [];
 
     if ($model->load($post) && $model->validate() && $model->periodo) {
         $start = \DateTime::createFromFormat('d/m/YH:i:s', $model->inicio . '24:00:00')->modify('-1 day');
@@ -1672,6 +1672,7 @@ class MainController extends Controller
 
         $matrixSegundaOrdem = $model->transitionMatrixSegundaOrdem($cursor_by_price, $three_states, 3, "t_state") ?? [];
         $three_state_matrix1 = $model->transitionMatrix1($cursor_by_price, $three_states, 3, "t_state") ?? [];
+        
         $matrix = $model->getMatrix();
 
         try {
@@ -1682,15 +1683,19 @@ class MainController extends Controller
             //$W1 = $model->calculateW1($resultVector1, $resultVector2, $initialVector, $lambda1, $lambda2);
             $valuesW = $model->calculateW($resultVector1, $resultVector2, $initialVector, $lambda1, $lambda2);
             $optimalSolution = $model->setSolution($resultVector1, $resultVector2, $initialVector);
-            $Vector = $model->PredictionVector($three_state_matrix1, $cursor_by_price, $states_number, $state_type);
-            $nextStateVector = $model->multiplicateTransitionMatrixCurrentVector($three_state_matrix1, $Vector);
+            $currentVector = $model->PredictionVector($three_state_matrix1, $cursor_by_price, $states_number, $state_type);
+            $nextVector = calculateNextVector($three_state_matrix1, $currentVector);
+           
+            
+            
+            
         } catch (\Exception $e) {
             Yii::error("Erro no processamento: " . $e->getMessage());
         }
 
         return $this->render('result-segunda-ordem-test1', compact(
             'matrixSegundaOrdem', 'three_state_matrix1', 'initialVector',
-            'transposedVector', 'resultVector1', 'resultVector2', 'valuesW', 'optimalSolution', 'Vector', 'nextStateVector'
+            'transposedVector', 'resultVector1', 'resultVector2', 'valuesW', 'optimalSolution', 'currentVector', 'nextVector'
         ));
     }
 

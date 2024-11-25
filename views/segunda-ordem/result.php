@@ -8,7 +8,7 @@
 <body>
     <h3>matrix Segunda Ordem</h3>
     <pre><?= print_r($matrixSegundaOrdem, true) ?></pre>
-    <h3>Three State Matrix1</h3>
+    <h3> three_state_matrix1</h3>
     <pre><?= print_r($three_state_matrix1, true) ?></pre>
     <h3>initial vector</h3>
     <pre><?= print_r($initialVector, true) ?></pre>
@@ -30,10 +30,10 @@
     <pre><?= print_r($valuesW, true) ?></pre>
     <h3>optimal Solution</h3>
     <pre><?= print_r($optimalSolution, true) ?></pre>
-    <h3> vector</h3>
-    <pre><?= print_r($Vector, true) ?></pre>
-    <h3>next_State_Vector</h3>
-    <pre><?= print_r($nextStateVector, true) ?></pre>
+    <h3> current vector</h3>
+    <pre><?= print_r($currentVector, true) ?></pre>
+    <h3>Vetor Previsto para o Próximo Dia</h3>
+    <pre><?= print_r($nextVector, true) ?></pre>
     
 </body>
 </html>

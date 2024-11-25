@@ -35,11 +35,11 @@ class ConsultaModel extends Model
     private $predictedArray;
     public $optimalSolution;
     public $solution;
-    public $three_state_matrix;
+    public $three_state_matrix1;
     public $matrix;
-    public $Vector;
+    public $currentVector;
     public $three_state_vector;
-    public $nextStateVector;
+    public $nextVector;
     
     
     
@@ -842,7 +842,7 @@ class ConsultaModel extends Model
     public function transitionMatrix1($paper, $states, $states_number, $state_type) 
     {
         // Inicializa a matriz de transição com zeros
-        $matrix = array_fill(0, $states_number, array_fill(0, $states_number, 0));
+        $three_state_matrix1 = array_fill(0, $states_number, array_fill(0, $states_number, 0));
         
         // Inicializa os contadores de transições para cada estado
         $state_counts = array_fill(0, $states_number, 0);
@@ -857,7 +857,7 @@ class ConsultaModel extends Model
                 $next_state >= 0 && $next_state < $states_number) {
                 
                 // Incrementa a contagem de transição
-                $matrix[$current_state][$next_state] += 1;
+                $three_state_matrix1[$current_state][$next_state] += 1;
                 $state_counts[$current_state] += 1;
             }
         }
@@ -865,7 +865,7 @@ class ConsultaModel extends Model
         // Trata o último estado (auto-transição)
         $last_state = $paper[count($paper) - 1][$state_type] - 1;
         if ($last_state >= 0 && $last_state < $states_number) {
-            $matrix[$last_state][$last_state] += 1;
+            $three_state_matrix1[$last_state][$last_state] += 1;
             $state_counts[$last_state] += 1;
         }
     
@@ -874,17 +874,17 @@ class ConsultaModel extends Model
             if ($state_counts[$i] > 0) {
                 // Normaliza apenas se houver transições
                 for ($j = 0; $j < $states_number; $j++) {
-                    $matrix[$i][$j] /= $state_counts[$i];
+                    $three_state_matrix1[$i][$j] /= $state_counts[$i];
                 }
             } else {
                 // Preenche linhas sem transições com probabilidades uniformes
                 for ($j = 0; $j < $states_number; $j++) {
-                    $matrix[$i][$j] = 1 / $states_number;
+                    $three_state_matrix1[$i][$j] = 1 / $states_number;
                 }
             }
         }
     
-        return $matrix;
+        return $three_state_matrix1;
     }
     
 
@@ -1153,53 +1153,41 @@ class ConsultaModel extends Model
     $state_type = 'state_type';
 
     $matrix = MatrixFactory::create($matrix);
-    $Vector = [[]];
+    $currentVector = [[]];
 
     for ($i = 0; $i < $states_number; $i++)
-        $Vector[0][$i] = 0;
+        $currentVector[0][$i] = 0;
 
     //declaração do vetor de estado inicial a partir do ultimo dia do conjunto de treinamento
-    $Vector[0][$paper[count($paper) - 1][$state_type] - 1] = 1;
-    $Vector = MatrixFactory::create($Vector);
+    $currentVector[0][$paper[count($paper) - 1][$state_type] - 1] = 1;
+    $currentVector = MatrixFactory::create($currentVector);
 
-    $Vector = $Vector->multiply($matrix); //multiplicando
-    $Vector = [0, 1, 0];
+    $currentVector = $currentVector->multiply($matrix); //multiplicando
+    $currentVector = [0, 1, 0];
 
-    return $Vector;
+    return $currentVector;
 }
 
-    // Função para multiplicar a matriz pelo vetor
-    public function multiplyTransitionMatrixByVector($three_state_matrix1, $Vector)   
-    {
-        // Verifica se a matriz e o vetor são válidos
-        if (!is_array($three_state_matrix1) || !is_array($Vector)) {
-            throw new InvalidArgumentException("Os argumentos fornecidos não são válidos: matriz e vetor devem ser arrays.");
+ public function calculateNextVector($three_state_matrix1, $currentVector) 
+{
+    //var_dump($three_state_matrix1);
+    //var_dump($currentVector);
+    $nextVector = [];
+
+    // Iterar pelas linhas da matriz
+    foreach ($three_state_matrix1 as $row) {
+        $sum = 0;
+
+        // Multiplicar os elementos do vetor pelos elementos da linha
+        foreach ($row as $index => $value) {
+            $sum += $value * $currentVector[$index];
         }
-    
-        // Verifica a consistência das dimensões
-        $rowCount = count($three_state_matrix1);
-        $colCount = count($three_state_matrix1[0]);
-        if ($colCount !== count($Vector)) {
-            throw new Exception("O número de colunas na matriz deve corresponder ao tamanho do vetor.");
-        }
-    
-        // Inicializa o vetor de resultado
-        $nextStateVector = [];
-        
-        // Realiza a multiplicação da matriz pelo vetor
-        foreach ($three_state_matrix1 as $rowIndex => $row) {
-            $sum = 0;
-            foreach ($row as $colIndex => $value) {
-                $sum += $value * $Vector[$colIndex]; // Multiplica a célula pelo valor correspondente do vetor
-            }
-            $nextStateVector[$rowIndex] = $sum; // Armazena o resultado para a linha correspondente
-        }
-    
-        // Exibe o vetor resultante para depuração
-        // Apenas para verificar resultados; remova ou comente essa linha em produção
-        print_r($nextStateVector);
-    
-        return $nextStateVector;
+
+        // Adicionar o resultado para a posição do vetor resultante
+        $nextVector[] = $sum;
     }
-    
+
+   return $nextVector;
+}
+
 }

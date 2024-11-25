@@ -46,8 +46,8 @@ class SegundaOrdemController extends Controller
         $three_state_matrix1 = 0;
         $matrix = 0;
         $valuesW = 0;
-        $Vector = 0;
-        $nextStateVector = 0;
+        $currentVector = 0;
+        $nextVector = 0;
        
 
         // uso do uniqueId
@@ -94,7 +94,7 @@ class SegundaOrdemController extends Controller
         
                 /* Validação .................................................................*/ 
 
-                $matrixSegundaOrdem = $model->transitionMatrixSegundaOrdem($cursor_by_price, $three_states, 3, "t_state") ?? [];
+            $matrixSegundaOrdem = $model->transitionMatrixSegundaOrdem($cursor_by_price, $three_states, 3, "t_state") ?? [];
             $three_state_matrix1 = $model->transitionMatrix1($cursor_by_price, $three_states, 3, "t_state") ?? [];
             $matrix = $model->getMatrix();
 
@@ -105,8 +105,10 @@ class SegundaOrdemController extends Controller
             $transposedVector = $model->transposeVector($initialVector);
             $valuesW = $model->calculateW($resultVector1, $resultVector2, $initialVector, $lambda1, $lambda2);
             $optimalSolution = $model->setSolution($resultVector1, $resultVector2, $initialVector);
-            $Vector = $model->PredictionVector($three_state_matrix1, $cursor_by_price, $states_number, $state_type);
-            $nextStateVector = $model->multiplicateTransitionMatrixCurrentVector($three_state_matrix1, $Vector);
+            $currentVector = $model->PredictionVector($three_state_matrix1, $cursor_by_price, $states_number, $state_type);
+            $nextVector = $model-> calculateNextVector($three_state_matrix1, $currentVector);
+            
+            
         } catch (\Exception $e) {
             Yii::error("Erro no processamento: " . $e->getMessage());
         }
@@ -123,8 +125,8 @@ class SegundaOrdemController extends Controller
                  'resultVector2' => $resultVector2,
                  'valuesW' => $valuesW,
                  'optimalSolution' => $optimalSolution,
-                 'Vector' => $Vector,
-                 'nextStateVector' => $nextStateVector,
+                 'currentVector' => $currentVector,
+                 'nextVector' => $nextVector,
              ]);
             }  else{
               //Tratamento de erro se não houver dados suficientes
