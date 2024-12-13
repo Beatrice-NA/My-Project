@@ -1168,26 +1168,65 @@ class ConsultaModel extends Model
     return $currentVector;
 }
 
- public function calculateNextVector($three_state_matrix1, $currentVector) 
-{
+ //public function calculateNextVector($three_state_matrix1, $currentVector) 
+//{
     //var_dump($three_state_matrix1);
     //var_dump($currentVector);
-    $nextVector = [];
+
+    // Inicializa o vetor de resultado
+    //$nextVector = [];
 
     // Iterar pelas linhas da matriz
-    foreach ($three_state_matrix1 as $row) {
-        $sum = 0;
+   // foreach ($three_state_matrix1 as $rowIndex => $row) {
+       // $sum = 0;
 
         // Multiplicar os elementos do vetor pelos elementos da linha
-        foreach ($row as $index => $value) {
-            $sum += $value * $currentVector[$index];
-        }
+       // foreach ($row as $colIndex => $value) {
+           // $sum += $value * $currentVector[$colIndex];
+       // }
 
         // Adicionar o resultado para a posição do vetor resultante
-        $nextVector[] = $sum;
+       // $nextVector[] = $sum;
+   // }
+
+   //return $nextVector;
+//}
+    
+public function calculateNextVector($three_state_matrix1, $currentVector)  
+{
+    // Verifica se a matriz e o vetor atual são válidos
+    if (!is_array($three_state_matrix1) || !is_array($currentVector)) {
+        throw new InvalidArgumentException("Os argumentos fornecidos não são válidos: matriz e vetor devem ser arrays.");
     }
 
-   return $nextVector;
+    // Verifica se as dimensões são compatíveis
+    $numStates = count($three_state_matrix1);
+    if ($numStates != count($currentVector)) {
+        throw new Exception("A matriz de transição e o vetor atual devem ter dimensões compatíveis.");
+    }
+
+    // var_dump($three_state_matrix1);
+    //var_dump($currentVector);
+    
+    // Inicializa o vetor de resultado
+    $nextVector = array_fill(0, $numStates, 0);
+
+    // Multiplica a matriz de transição pelo vetor atual
+    foreach ($three_state_matrix1 as $rowIndex => $row) {
+        foreach ($row as $colIndex => $value) {
+            $nextVector[$rowIndex] += $value * $currentVector[$colIndex];
+        }
+    }
+
+    // Normalizar o vetor para garantir que a soma seja 1
+    $totalSum = array_sum($nextVector);
+    if ($totalSum > 0) {
+        foreach ($nextVector as &$value) {
+            $value /= $totalSum;
+        }
+    }
+
+    return $nextVector;
 }
 
 }
