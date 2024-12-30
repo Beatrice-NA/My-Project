@@ -11,6 +11,7 @@ use yii\base\Model;
 use Yii;
 use yii\base\ErrorException;
 use InvalidArgumentException;
+use logic\solveLinearSystem;
 
 class ConsultaModel extends Model
 {
@@ -27,9 +28,6 @@ class ConsultaModel extends Model
     public $qtde_up_down_constants;
     public $actions;
     public $paper;
-    private $initialVector;
-    private $resultVector1;
-    private $resultVector2;
     public $predictVector;
     private $predictionVector;
     private $predictedArray;
@@ -40,6 +38,10 @@ class ConsultaModel extends Model
     public $currentVector;
     public $three_state_vector;
     public $nextVector;
+    private $w;
+    private $initialVector;
+    private $resultVector1;
+    private $resultVector2;
     
     
     
@@ -935,14 +937,14 @@ class ConsultaModel extends Model
 
    public function getMatrix()
     {
-        // Exemplo: Matriz gerada manualmente ou a partir de dados dinâmicos
+        // Exemplo de teste
         $matrix = [
             [1, 2, 3],
             [4, 5, 6],
             [7, 8, 9],
         ];
 
-        // Verifique se é uma matriz válida
+        // Verifica se é uma matriz válida
         if (!is_array($matrix) || count($matrix) === 0) {
             Yii::error("Matriz inválida gerada no método getMatrix: " . print_r($matrix, true));
             return [];
@@ -1066,167 +1068,232 @@ class ConsultaModel extends Model
     
         return $resultVector2;
     }
-    
-    public function calculateW($resultVector1, $resultVector2, $initialVector, $lambda1 = 1, $lambda2 = 0) {
-        // Valida os parâmetros
-        if (!is_array($resultVector1) || !is_array($resultVector2) || !is_array($initialVector)) {
-            throw new InvalidArgumentException("Todos os argumentos fornecidos devem ser arrays.");
+
+ 
+function solveOptimizationProblem($objectiveFunction, $numVariables) {
+    $variables = array_fill(0, $numVariables, 0); // Inicializa as variáveis lambda_i
+
+    // Restrições:
+    $constraints = [
+        // Cada λ_i ≥ 0
+        'non_negative' => function($variables) {
+            foreach ($variables as $var) {
+                if ($var < 0) return false;
+            }
+            return true;
+        },
+        // Soma de λ_i = 1
+        'sum_to_one' => function($variables) {
+            return abs(array_sum($variables) - 1) < 1e-6;
         }
-    
-        // Garante que os tamanhos dos vetores sejam compatíveis
-        if (count($resultVector1) !== count($initialVector) || count($resultVector2) !== count($initialVector)) {
-            throw new InvalidArgumentException("Os vetores resultVector1, resultVector2 e initialVector devem ter o mesmo tamanho.");
-        }
-    
-        // Inicializa os valores de W1 e W2
-        $W1 = INF;
-        $W2 = INF;
-    
-        // Calcula W1 e W2 com base nos elementos dos vetores
-        foreach ($initialVector as $index => $value) {
-            $W1 = min($W1, $value - ($resultVector1[$index] * $lambda1) - ($resultVector1[$index] * $lambda2));
-            $W2 = min($W2, -$value + ($resultVector2[$index] * $lambda1) + ($resultVector2[$index] * $lambda2));
-        }
-    
-        // Retorna os valores de W1 e W2
-        return [
-            'W1' => $W1,
-            'W2' => $W2
-        ];
-    }
-    
-    
-
-   public function setSolution($resultVector1, $resultVector2, $initialVector) {
-    // Verifica se as entradas são arrays válidos
-    if (!is_array($resultVector1) || !is_array($resultVector2) || !is_array($initialVector)) {
-        throw new InvalidArgumentException("Os argumentos fornecidos devem ser arrays.");
-    }
-
-    // Verifica se os tamanhos dos vetores são compatíveis
-    $size1 = count($resultVector1);
-    $size2 = count($resultVector2);
-    $sizeInitial = count($initialVector);
-
-    if ($size1 !== $size2 || $size1 !== $sizeInitial) {
-        throw new InvalidArgumentException("Os vetores fornecidos devem ter o mesmo tamanho.");
-    }
-
-    // Inicializa os valores fixos de lambda1 e lambda2
-    $lambda1 = 1;
-    $lambda2 = 0;
-
-    // Inicializa o valor de W1 com um valor alto para buscar o mínimo
-    $W1 = INF;
-
-    // Cálculo de W1
-    $W1 = 0; // Inicializa o W1
-
-    for ($i = 0; $i < $size1; $i++) {
-        // Adiciona o cálculo parcial
-        $W1 += $initialVector[$i] - ($resultVector1[$i] * $lambda1 + $resultVector2[$i] * $lambda2);
-
-        // Log para depuração
-        Yii::info("Iteração $i: Initial = {$initialVector[$i]}, Result1 = {$resultVector1[$i]}, Result2 = {$resultVector2[$i]}, Parcial W1 = $W1");
-    }
-
-    // Armazena a solução ótima com apenas os valores de lambda1, lambda2 e W1
-    $this->optimalSolution = [
-        'lambda1' => $lambda1,
-        'lambda2' => $lambda2,
-        'W1' => $W1,
     ];
 
-    return $this->optimalSolution;
+    $bestLambdas = null;
+    $bestObjectiveValue = PHP_FLOAT_MIN;
+
+    $steps = 100;
+    for ($i = 0; $i <= $steps; $i++) {
+        $variables = array_fill(0, $numVariables, 0);
+        $variables[0] = $i / $steps; // Assume λ_1 varia entre 0 e 1
+        $variables[1] = 1 - $variables[0]; // λ_2 é complementar
+
+        if (!$constraints['non_negative']($variables) || !$constraints['sum_to_one']($variables)) {
+            continue; // Ignora soluções inválidas
+        }
+
+        $objectiveValue = $objectiveFunction($variables);
+
+        if ($objectiveValue > $bestObjectiveValue) {
+            $bestObjectiveValue = $objectiveValue;
+            $bestLambdas = $variables;
+        }
+    }
+
+    return $bestLambdas;
+}
+
+private function normalizeVector($vector)
+{
+    $sum = array_sum($vector);
+    if ($sum == 0) {
+        throw new \InvalidArgumentException("A soma dos elementos do vetor não pode ser zero.");
+    }
+
+    return array_map(function ($value) use ($sum) {
+        return $value / $sum;
+    }, $vector);
+}
+
+public function calculateW($resultVector1, $resultVector2, $initialVector, $bestLambdas)
+{
+    // Exemplos de entrada
+    $resultVector1 = [0.3, 0.2, 0.1];
+    $resultVector2 = [0.4, 0.3, 0.2];
+    $initialVector = [0.5, 0.4, 0.3];
+    $bestLambdas = [0.0, 1.0];
+
+    // Verificação de entrada
+    if (empty($resultVector1) || empty($resultVector2) || empty($initialVector) || empty($bestLambdas)) {
+        throw new \InvalidArgumentException("Nenhum dos vetores de entrada pode estar vazio.");
+    }
+
+    $m = count($initialVector); // Número de restrições
+    $n = count($bestLambdas);   // Número de variáveis lambda
+
+    // Validação de consistência
+    if (count($resultVector1) !== $m || count($resultVector2) !== $m) {
+        throw new \InvalidArgumentException("O tamanho de resultVector1 e resultVector2 deve ser igual ao número de restrições.");
+    }
+    if ($n < 2) {
+        throw new \InvalidArgumentException("O vetor bestLambdas deve conter pelo menos dois valores (λ1 e λ2).");
+    }
+
+    // Inicializar o maior valor de W
+    $maxW = 0;
+
+    // Construção das restrições
+    for ($i = 0; $i < $m; $i++) {
+        // Inicializar as restrições para cada linha
+        $lhsPositive = $initialVector[$i]; // Atribui o valor do vetor inicial na posição $i à variável Left-Hand Side for positive
+        $lhsNegative = -$initialVector[$i]; // Atribui o valor negativo do vetor inicial na posição $i à variável Left-Hand Side negative
+
+        // Aplicação dos valores de lambda para calcular
+        for ($j = 0; $j < $n; $j++) {
+            $lhsPositive -= $resultVector1[$i] * $bestLambdas[$j];
+            $lhsNegative += $resultVector2[$i] * $bestLambdas[$j];
+        }
+
+        // Determinar o maior valor para W considerando as restrições
+        $wCandidate = max(0, max($lhsPositive, $lhsNegative));
+
+        // Atualizar o maior valor encontrado
+        $maxW = max($maxW, $wCandidate);
+    }
+
+    // Retornar o maior valor calculado para W
+    return $maxW;
+}
+
+public function calculateOptimalSolution($bestLambdas, $W_star)
+{
+   
+    // Verifica se $bestLambdas é válido
+    if (!is_array($bestLambdas) || count($bestLambdas) < 2) {
+        throw new InvalidArgumentException("O array \$bestLambdas deve conter pelo menos dois valores.");
+    }
+
+    // Definindo os melhores valores de λ
+    $lambda1_star = $bestLambdas[0]; // Primeiro valor de λ
+    $lambda2_star = $bestLambdas[1]; // Segundo valor de λ
+
+    // Verifica se W* é válido
+    if (!is_numeric($W_star)) {
+        throw new InvalidArgumentException("W* deve ser um número.");
+    }
+
+    // A solução ótima será composta pelos valores das variáveis λ1*, λ2* e W*
+    $optimalSolution = [
+        'lambda1_star' => $lambda1_star,
+        'lambda2_star' => $lambda2_star,
+        'W_star' => $W_star,
+    ];
+
+    // Retornar a solução ótima
+    return $optimalSolution;
 }
     
     //Constroi o vetor de previsão
-    public function PredictionVector($matrix, $paper, $states_number, $state_type) 
+    public function PredictionVector($matrix, $paper, $states_number, $state_type)  
 {
+    // Exemplo de entrada para $paper
     $paper = [
         ['state_type' => 1],
         ['state_type' => 2],
         ['state_type' => 3], // Último estado é 3
     ];
     
-    $states_number = 3;
+    $states_number = 3; // Número de estados
     $state_type = 'state_type';
 
+    // Converte a matriz para objeto MatrixFactory
     $matrix = MatrixFactory::create($matrix);
+
+    // Declaração do vetor inicial vazio
     $currentVector = [[]];
-
-    for ($i = 0; $i < $states_number; $i++)
+    for ($i = 0; $i < $states_number; $i++) {
         $currentVector[0][$i] = 0;
-
-    //declaração do vetor de estado inicial a partir do ultimo dia do conjunto de treinamento
-    $currentVector[0][$paper[count($paper) - 1][$state_type] - 1] = 1;
-    $currentVector = MatrixFactory::create($currentVector);
-
-    $currentVector = $currentVector->multiply($matrix); //multiplicando
-    $currentVector = [0, 1, 0];
-
-    return $currentVector;
-}
-
- //public function calculateNextVector($three_state_matrix1, $currentVector) 
-//{
-    //var_dump($three_state_matrix1);
-    //var_dump($currentVector);
-
-    // Inicializa o vetor de resultado
-    //$nextVector = [];
-
-    // Iterar pelas linhas da matriz
-   // foreach ($three_state_matrix1 as $rowIndex => $row) {
-       // $sum = 0;
-
-        // Multiplicar os elementos do vetor pelos elementos da linha
-       // foreach ($row as $colIndex => $value) {
-           // $sum += $value * $currentVector[$colIndex];
-       // }
-
-        // Adicionar o resultado para a posição do vetor resultante
-       // $nextVector[] = $sum;
-   // }
-
-   //return $nextVector;
-//}
-    
-public function calculateNextVector($three_state_matrix1, $currentVector)  
-{
-    // Verifica se a matriz e o vetor atual são válidos
-    if (!is_array($three_state_matrix1) || !is_array($currentVector)) {
-        throw new InvalidArgumentException("Os argumentos fornecidos não são válidos: matriz e vetor devem ser arrays.");
     }
 
-    // Verifica se as dimensões são compatíveis
+    // Define o vetor de estado inicial com base no último estado do conjunto
+    $currentVector[0][$paper[count($paper) - 1][$state_type] - 1] = 1;
+    $currentVector = MatrixFactory::create($currentVector);
+    
+
+    // Multiplicação pelo vetor inicial
+    $currentVector = $currentVector->multiply($matrix);
+
+    return $currentVector->getMatrix(); // Retorna o vetor como array
+    //return $currentVector->toArray(); // Retorna o vetor como array
+}
+
+//public function calculateNextVector($three_state_matrix1, $currentVector)
+//{
+    
+    // Criar a matriz de transição e vetor inicial
+   // $matrix = MatrixFactory::create($three_state_matrix1);
+   // $vector = MatrixFactory::create([$currentVector]); // O vetor é uma matriz de 1 linha
+
+    // Multiplicar matriz pelo vetor
+   // $nextVector = $vector->multiply($matrix);
+
+    // Verificar resultado antes de retornar
+   // if ($nextVector->getM() === 0 || $nextVector->getN() === 0) {
+        //throw new \Exception('Erro na multiplicação: vetor resultante vazio.');
+   // }
+
+    // Retornar como array simples
+   // return $nextVector->toArray()[0]; // Pega a única linha do vetor
+//}
+
+public function calculateNextVector($three_state_matrix1, $currentVector)
+{
+    // Verifica se a matriz de transição não está vazia
+    if (empty($three_state_matrix1) || empty($currentVector)) {
+        throw new InvalidArgumentException("Matriz de transição e vetor atual não podem ser vazios.");
+    }
+
+    // Verifica se a matriz é quadrada
     $numStates = count($three_state_matrix1);
-    if ($numStates != count($currentVector)) {
+    foreach ($three_state_matrix1 as $row) {
+        if (count($row) !== $numStates) {
+            throw new Exception("A matriz de transição deve ser quadrada.");
+        }
+    }
+
+    // Verifica se as dimensões da matriz e do vetor são compatíveis
+    if ($numStates !== count($currentVector)) {
         throw new Exception("A matriz de transição e o vetor atual devem ter dimensões compatíveis.");
     }
 
-    // var_dump($three_state_matrix1);
-    //var_dump($currentVector);
-    
     // Inicializa o vetor de resultado
     $nextVector = array_fill(0, $numStates, 0);
 
-    // Multiplica a matriz de transição pelo vetor atual
+    // Realiza a multiplicação da matriz pelo vetor atual
     foreach ($three_state_matrix1 as $rowIndex => $row) {
         foreach ($row as $colIndex => $value) {
             $nextVector[$rowIndex] += $value * $currentVector[$colIndex];
         }
     }
 
-    // Normalizar o vetor para garantir que a soma seja 1
-    $totalSum = array_sum($nextVector);
-    if ($totalSum > 0) {
-        foreach ($nextVector as &$value) {
-            $value /= $totalSum;
-        }
-    }
-
+    // Retorna o próximo vetor previsto
     return $nextVector;
 }
-
 }
+
+// Normalizar o vetor para garantir que a soma seja 1
+   // $totalSum = array_sum($nextVector);
+    //if ($totalSum > 0) {
+       // foreach ($nextVector as &$value) {
+            //$value /= $totalSum;
+       // }
+   // }

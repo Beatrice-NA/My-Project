@@ -1643,9 +1643,22 @@ class MainController extends Controller
     $resultVector1 = [];
     $resultVector2 = [];
     $nextVector = [];
-    $valuesW = [];
     $three_state_matrix1 = [];
     $currentVector = [];
+    $solution = [];
+    $objectiveFunction = [];
+    $result = [];
+    $lambda = [];
+    $n = [];
+    $m = [];
+    $w = [];
+    $bestLambdas = [];
+    $variables = [];
+    $lambda1_star = [];
+    $lambda2_star = [];
+    $W_star = [];
+    $data = [];
+    
 
     if ($model->load($post) && $model->validate() && $model->periodo) {
         $start = \DateTime::createFromFormat('d/m/YH:i:s', $model->inicio . '24:00:00')->modify('-1 day');
@@ -1676,26 +1689,64 @@ class MainController extends Controller
         $matrix = $model->getMatrix();
 
         try {
+            // Definindo a função objetivo para a otimização
+            $objectiveFunction = function ($variables) {
+            //  maximiza λ_1^2 + λ_2^2
+            return pow($variables[0], 2) + pow($variables[1], 2);
+            };
+
+            // Chamando a função solveOptimizationProblem
+            try {
+             $result = $model-> solveOptimizationProblem($objectiveFunction, 2);
+            } catch (Exception $e) {
+                $result = null;
+                Yii::error($e->getMessage(), __METHOD__);
+            }
+
+             // Exibindo o resultado no log ou usando-o em cálculos posteriores
+            if (is_array($result) && !empty($result)) {
+                Yii::info("Solução ótima encontrada: " . implode(", ", $result), __METHOD__);
+         } else {
+                Yii::warning("Nenhuma solução válida foi encontrada.", __METHOD__);
+            }
             $initialVector = $model->calculateInitialVector($matrix);
             $resultVector1 = $model->multiplyMatrixByinitialVector($matrixSegundaOrdem, $initialVector);
             $resultVector2 = $model->multiplyMatrixByinitialVector($three_state_matrix1, $initialVector);
             $transposedVector = $model->transposeVector($initialVector);
-            //$W1 = $model->calculateW1($resultVector1, $resultVector2, $initialVector, $lambda1, $lambda2);
-            $valuesW = $model->calculateW($resultVector1, $resultVector2, $initialVector, $lambda1, $lambda2);
-            $optimalSolution = $model->setSolution($resultVector1, $resultVector2, $initialVector);
-            $currentVector = $model->PredictionVector($three_state_matrix1, $cursor_by_price, $states_number, $state_type);
-            $nextVector = calculateNextVector($three_state_matrix1, $currentVector);
-           
-            
-            
+             
+          $currentVector = $model->PredictionVector($three_state_matrix1, $cursor_by_price, $states_number, $state_type);
+        
+         $solution = $model->solveLinearSystem($X, $Q_matrices, $lambda, count($X));
+         print_r($solution);
             
         } catch (\Exception $e) {
             Yii::error("Erro no processamento: " . $e->getMessage());
         }
 
+        try {
+            // Obter o maior valor de W
+            $W_star = $model->calculateW($resultVector1, $resultVector2, $initialVector, $bestLambdas);
+        } catch (\Exception $e) {
+            $W_star = null; // Em caso de erro, definir como nulo
+            Yii::error("Erro ao calcular W: " . $e->getMessage());
+        }
+
+        $bestLambdas = [0, 1]; // Melhores valores calculados
+        $optimalSolution = $model->calculateOptimalSolution($bestLambdas, $W_star);
+
+        $three_state_matrix1 = [
+            [0.5, 0.3, 0.2],
+            [0.1, 0.6, 0.3],
+            [0.4, 0.1, 0.5],
+        ];
+
+        $currentVector = [0, 1, 0];
+        $nextVector = $model->calculateNextVector($three_state_matrix1, $currentVector);
+
+
         return $this->render('result-segunda-ordem-test1', compact(
             'matrixSegundaOrdem', 'three_state_matrix1', 'initialVector',
-            'transposedVector', 'resultVector1', 'resultVector2', 'valuesW', 'optimalSolution', 'currentVector', 'nextVector'
+            'transposedVector', 'resultVector1', 'resultVector2', 'w', 'optimalSolution', 'result', 'currentVector =>[0, 1, 0]', 'nextVector', 'lambda1_star', 'lambda2_star', 'W_star'
         ));
     }
 

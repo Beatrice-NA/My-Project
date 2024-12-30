@@ -31,10 +31,6 @@ class SegundaOrdemController extends Controller
         $resultVector2 = 0;
         $sumstates = 0;
         $paper = 0;
-        $lambda1 = 0;
-        $lambda2 = 0;
-        $W1 = 0;
-        $W2 = 0;
         $initialVector = 0;
         $optimalSolution = 0;
         $solution = 0;
@@ -45,10 +41,24 @@ class SegundaOrdemController extends Controller
         $nextStateVector = 0;
         $three_state_matrix1 = 0;
         $matrix = 0;
-        $valuesW = 0;
         $currentVector = 0;
         $nextVector = 0;
-       
+        $solution = 0;
+        $objectiveFunction = 0;
+        $result = 0;
+        $lambda = 0;
+        $w = 0;
+        $maxW = 0;
+        $bestLambdas = 0;
+        $variables = 0;
+        $n = 0;
+        $m = 0;
+        $w = 0;
+        $lambda1_star = 0;
+        $lambda2_star = 0;
+        $W_star = 0;
+        $data = 0;
+    
 
         // uso do uniqueId
        $uniqueId = Yii::$app->controller->uniqueId;
@@ -99,22 +109,64 @@ class SegundaOrdemController extends Controller
             $matrix = $model->getMatrix();
 
         try {
+            // Definindo a função objetivo para a otimização
+            $objectiveFunction = function ($variables) {
+                //  maximiza λ_1^2 + λ_2^2
+                return pow($variables[0], 2) + pow($variables[1], 2);
+                };
+    
+                try {
+                 $result = $model->solveOptimizationProblem($objectiveFunction, 2);
+                } catch (Exception $e) {
+                    $result = null;
+                    Yii::error($e->getMessage(), __METHOD__);
+                }
+    
+                 // Exibindo o resultado no log ou usando-o em cálculos posteriores
+                if (is_array($result) && !empty($result)) {
+                    Yii::info("Solução ótima encontrada: " . implode(", ", $result), __METHOD__);
+             } else {
+                    Yii::warning("Nenhuma solução válida foi encontrada.", __METHOD__);
+                }
             $initialVector = $model->calculateInitialVector($matrix);
             $resultVector1 = $model->multiplyMatrixByinitialVector($matrixSegundaOrdem, $initialVector);
             $resultVector2 = $model->multiplyMatrixByinitialVector($three_state_matrix1, $initialVector);
             $transposedVector = $model->transposeVector($initialVector);
-            $valuesW = $model->calculateW($resultVector1, $resultVector2, $initialVector, $lambda1, $lambda2);
-            $optimalSolution = $model->setSolution($resultVector1, $resultVector2, $initialVector);
-            $currentVector = $model->PredictionVector($three_state_matrix1, $cursor_by_price, $states_number, $state_type);
-            $nextVector = $model-> calculateNextVector($three_state_matrix1, $currentVector);
+
+           $currentVector = $model->PredictionVector($three_state_matrix1, $cursor_by_price, $states_number, $state_type);
+           
             
-            
+            $solution = $model->solveLinearSystem($X, $Q_matrices, $lambda, count($X));
+            print_r($solution);
+
         } catch (\Exception $e) {
             Yii::error("Erro no processamento: " . $e->getMessage());
         }
-                 
+
+        try {
+            // Obter o maior valor de W
+            $W_star = $model->calculateW($resultVector1, $resultVector2, $initialVector, $bestLambdas);
+        } catch (\Exception $e) {
+            $W_star = null; // Em caso de erro, definir como nulo
+            Yii::error("Erro ao calcular W: " . $e->getMessage());
+        }
+
+        $bestLambdas = [0, 1]; // Melhores valores calculados
+        $optimalSolution = $model->calculateOptimalSolution($bestLambdas, $W_star);
+
+        $three_state_matrix1 = [
+            [0.5, 0.3, 0.2],
+            [0.1, 0.6, 0.3],
+            [0.4, 0.1, 0.5],
+        ];
+
+        $currentVector = [0, 1, 0];
+        $nextVector = $model->calculateNextVector($three_state_matrix1, $currentVector);
+
+
                 // Cria a matriz com o MathPHP
                 $Matrix = MatrixFactory::create($three_state_matrix1);
+                
                  return $this->render('result', [
                 'matrixSegundaOrdem' =>  $matrixSegundaOrdem,
                  //'vector' => $three_state_vector,
@@ -123,10 +175,14 @@ class SegundaOrdemController extends Controller
                  'transposedVector' => $transposedVector,
                  'resultVector1' => $resultVector1,
                  'resultVector2' => $resultVector2,
-                 'valuesW' => $valuesW,
                  'optimalSolution' => $optimalSolution,
-                 'currentVector' => $currentVector,
-                 'nextVector' => $nextVector,
+                 'result' => $result,  
+                 'w' => $w,
+                 'lambda1_star' => $lambda1_star,
+                'lambda2_star' => $lambda2_star,
+                'W_star' => $W_star,
+                'currentVector' => [0, 1, 0],
+                'nextVector' => $nextVector,
              ]);
             }  else{
               //Tratamento de erro se não houver dados suficientes
