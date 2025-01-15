@@ -1289,7 +1289,6 @@ public function calculateNextVector($three_state_matrix1, $currentVector)
     return $nextVector;
 }
 }
-
 // Normalizar o vetor para garantir que a soma seja 1
    // $totalSum = array_sum($nextVector);
     //if ($totalSum > 0) {

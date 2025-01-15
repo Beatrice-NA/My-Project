@@ -58,7 +58,5 @@
 
     <h3>Vetor Previsto para o Próximo Dia</h3>
     <pre><?= print_r($nextVector, true) ?></pre>
-    
-    
 </body>
 </html>

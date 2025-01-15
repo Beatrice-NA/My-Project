@@ -1,0 +1,35 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../views"
+		},
+		{
+			"path": "../runtime"
+		},
+		{
+			"path": "../assets"
+		},
+		{
+			"path": "../vagrant"
+		},
+		{
+			"path": "../vendor"
+		},
+		{
+			"path": "../web"
+		},
+		{
+			"path": "../.git"
+		},
+		{
+			"path": "../controllers"
+		},
+		{
+			"path": "../models"
+		}
+	],
+	"settings": {}
+}

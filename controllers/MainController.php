@@ -1659,7 +1659,6 @@ class MainController extends Controller
     $W_star = [];
     $data = [];
     
-
     if ($model->load($post) && $model->validate() && $model->periodo) {
         $start = \DateTime::createFromFormat('d/m/YH:i:s', $model->inicio . '24:00:00')->modify('-1 day');
         $final = \DateTime::createFromFormat('d/m/YH:i:s', $model->final . '24:00:00');
