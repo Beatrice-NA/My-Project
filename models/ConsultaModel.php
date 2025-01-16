@@ -13,7 +13,7 @@ use yii\base\ErrorException;
 use InvalidArgumentException;
 use logic\solveLinearSystem;
 use PHPSimplex\Simplex; 
-require_once __DIR__ . '/PHPSimplex/Simplex.php';
+
 
 class ConsultaModel extends Model
 {
@@ -1075,7 +1075,7 @@ class ConsultaModel extends Model
     public function calcularSistemaLinear()
     {
         // Configuração do problema de otimização
-        $objective = [1, 0, 0, 0]; // Maximizar a Função objetivo W representado pelo primeiro coefisente(os dois zeros são números artificais)
+        $objective = [1, 0, 0]; // Maximizar a Função objetivo W representado pelo primeiro coefisente(os dois zeros são números artificais)
         
         $constraints = [
             ['1', '0', '-0.460', '-0.414', '>=', 0.444],  // Restrição 1 com corficiente

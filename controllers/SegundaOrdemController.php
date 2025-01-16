@@ -60,6 +60,7 @@ class SegundaOrdemController extends Controller
         $W_star = 0;
         $data = 0;
         $resultado = 0;
+        $simplex = 0;
     
 
         // uso do uniqueId
@@ -140,7 +141,7 @@ class SegundaOrdemController extends Controller
         }
 
         $resultado = $model->calcularSistemaLinear();
-        
+
       if (isset($resultado['error'])) {
         echo "Erro: " . $resultado['error'];
       } else {

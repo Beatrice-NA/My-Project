@@ -8,7 +8,7 @@ use yii\jui\DatePicker;
 ini_set('max_execution_time', 0); //300 seconds = 5 minutes
 ini_set('memory_limit', '-1');
 
-require_once __DIR__ . '/PHPSimplex/Simplex.php'; 
+require_once __DIR__ . '/vendor/autoload.php'; 
 
 use PHPSimplex\Simplex; 
 

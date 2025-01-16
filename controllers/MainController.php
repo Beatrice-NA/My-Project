@@ -1660,6 +1660,7 @@ class MainController extends Controller
     $W_star = [];
     $data = [];
     $resultado = [];
+    $simplex = [];
     
     if ($model->load($post) && $model->validate() && $model->periodo) {
         $start = \DateTime::createFromFormat('d/m/YH:i:s', $model->inicio . '24:00:00')->modify('-1 day');
@@ -1723,7 +1724,7 @@ class MainController extends Controller
         }
 
              $resultado = $model->calcularSistemaLinear(); 
-             
+
             if (isset($resultado['error'])) {
                 echo "Erro: " . $resultado['error'];
             } else {
