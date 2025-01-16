@@ -6,6 +6,7 @@ use app\models\ConsultaModel;
 use app\models\Paper;
 use Yii;
 use MathPHP\LinearAlgebra\MatrixFactory;
+use PHPSimplex\Simplex;
 
 //date_default_timezone_set("america/bahia");
 
@@ -58,6 +59,7 @@ class SegundaOrdemController extends Controller
         $lambda2_star = 0;
         $W_star = 0;
         $data = 0;
+        $resultado = 0;
     
 
         // uso do uniqueId
@@ -110,49 +112,51 @@ class SegundaOrdemController extends Controller
 
         try {
             // Definindo a função objetivo para a otimização
-            $objectiveFunction = function ($variables) {
+           // $objectiveFunction = function ($variables) {
                 //  maximiza λ_1^2 + λ_2^2
-                return pow($variables[0], 2) + pow($variables[1], 2);
-                };
+                //return pow($variables[0], 2) + pow($variables[1], 2);
+               // };
     
-                try {
-                 $result = $model->solveOptimizationProblem($objectiveFunction, 2);
-                } catch (Exception $e) {
-                    $result = null;
-                    Yii::error($e->getMessage(), __METHOD__);
-                }
+                //try {
+                 //$result = $model->solveOptimizationProblem($objectiveFunction, 2);
+                //} catch (Exception $e) {
+                   // $result = null;
+                   // Yii::error($e->getMessage(), __METHOD__);
+               // }
     
                  // Exibindo o resultado no log ou usando-o em cálculos posteriores
-                if (is_array($result) && !empty($result)) {
-                    Yii::info("Solução ótima encontrada: " . implode(", ", $result), __METHOD__);
-             } else {
-                    Yii::warning("Nenhuma solução válida foi encontrada.", __METHOD__);
-                }
+               // if (is_array($result) && !empty($result)) {
+                   // Yii::info("Solução ótima encontrada: " . implode(", ", $result), __METHOD__);
+            // } else {
+                   // Yii::warning("Nenhuma solução válida foi encontrada.", __METHOD__);
+                //}
             $initialVector = $model->calculateInitialVector($matrix);
             $resultVector1 = $model->multiplyMatrixByinitialVector($matrixSegundaOrdem, $initialVector);
             $resultVector2 = $model->multiplyMatrixByinitialVector($three_state_matrix1, $initialVector);
             $transposedVector = $model->transposeVector($initialVector);
-
-           $currentVector = $model->PredictionVector($three_state_matrix1, $cursor_by_price, $states_number, $state_type);
-           
-            
-            $solution = $model->solveLinearSystem($X, $Q_matrices, $lambda, count($X));
-            print_r($solution);
-
+            $currentVector = $model->PredictionVector($three_state_matrix1, $cursor_by_price, $states_number, $state_type);
         } catch (\Exception $e) {
             Yii::error("Erro no processamento: " . $e->getMessage());
         }
 
-        try {
+        $resultado = $model->calcularSistemaLinear();
+        
+      if (isset($resultado['error'])) {
+        echo "Erro: " . $resultado['error'];
+      } else {
+        echo "Solução ótima: " . $resultado['optimalValue'] . "<br>";
+        echo "Solução: " . implode(", ", $resultado['solution']);
+      }
+        //try {
             // Obter o maior valor de W
-            $W_star = $model->calculateW($resultVector1, $resultVector2, $initialVector, $bestLambdas);
-        } catch (\Exception $e) {
-            $W_star = null; // Em caso de erro, definir como nulo
-            Yii::error("Erro ao calcular W: " . $e->getMessage());
-        }
+           // $W_star = $model->calculateW($resultVector1, $resultVector2, $initialVector, $bestLambdas);
+       // } catch (\Exception $e) {
+           // $W_star = null; // Em caso de erro, definir como nulo
+           // Yii::error("Erro ao calcular W: " . $e->getMessage());
+       // }
 
-        $bestLambdas = [0, 1]; // Melhores valores calculados
-        $optimalSolution = $model->calculateOptimalSolution($bestLambdas, $W_star);
+        //$bestLambdas = [0, 1]; // Melhores valores calculados
+       // $optimalSolution = $model->calculateOptimalSolution($bestLambdas, $W_star);
 
         $three_state_matrix1 = [
             [0.5, 0.3, 0.2],
@@ -175,12 +179,14 @@ class SegundaOrdemController extends Controller
                  'transposedVector' => $transposedVector,
                  'resultVector1' => $resultVector1,
                  'resultVector2' => $resultVector2,
-                 'optimalSolution' => $optimalSolution,
-                 'result' => $result,  
-                 'w' => $w,
-                 'lambda1_star' => $lambda1_star,
-                'lambda2_star' => $lambda2_star,
-                'W_star' => $W_star,
+                 'optimalValue' => $optimalValue,
+                'solution' => $solution,
+                 //'optimalSolution' => $optimalSolution,
+                 //'result' => $result,  
+                 //'w' => $w,
+                 //'lambda1_star' => $lambda1_star,
+                //'lambda2_star' => $lambda2_star,
+               // 'W_star' => $W_star,
                 'currentVector' => [0, 1, 0],
                 'nextVector' => $nextVector,
              ]);

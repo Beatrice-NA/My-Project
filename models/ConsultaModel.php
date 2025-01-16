@@ -12,6 +12,8 @@ use Yii;
 use yii\base\ErrorException;
 use InvalidArgumentException;
 use logic\solveLinearSystem;
+use PHPSimplex\Simplex; 
+require_once __DIR__ . '/PHPSimplex/Simplex.php';
 
 class ConsultaModel extends Model
 {
@@ -42,6 +44,7 @@ class ConsultaModel extends Model
     private $initialVector;
     private $resultVector1;
     private $resultVector2;
+    private $simplex;
     
     
     
@@ -1069,48 +1072,72 @@ class ConsultaModel extends Model
         return $resultVector2;
     }
 
- 
-function solveOptimizationProblem($objectiveFunction, $numVariables) {
-    $variables = array_fill(0, $numVariables, 0); // Inicializa as variáveis lambda_i
+    public function calcularSistemaLinear()
+    {
+        // Configuração do problema de otimização
+        $objective = [1, 0, 0, 0]; // Maximizar a Função objetivo W representado pelo primeiro coefisente(os dois zeros são números artificais)
+        
+        $constraints = [
+            ['1', '0', '-0.460', '-0.414', '>=', 0.444],  // Restrição 1 com corficiente
+            ['1', '0', '0.460', '0.414', '>=', -0.444],   // Restrição 2 com coeficiente
+            [0, 1, 1, 0, '=', 1],   // Soma das variáveis de decisão deve ser 1
+            [0, 1, 0, 0, '>=', 0],     // lambda_1 >= 0
+            [0, 0, 1, 0, '>=', 0],     // lambda_2 >= 0
+        ];
 
-    // Restrições:
-    $constraints = [
-        // Cada λ_i ≥ 0
-        'non_negative' => function($variables) {
-            foreach ($variables as $var) {
-                if ($var < 0) return false;
-            }
-            return true;
-        },
-        // Soma de λ_i = 1
-        'sum_to_one' => function($variables) {
-            return abs(array_sum($variables) - 1) < 1e-6;
-        }
-    ];
+        // Instanciar a classe Simplex
+        $simplex = new Simplex($objective, $constraints);
 
-    $bestLambdas = null;
-    $bestObjectiveValue = PHP_FLOAT_MIN;
-
-    $steps = 100;
-    for ($i = 0; $i <= $steps; $i++) {
-        $variables = array_fill(0, $numVariables, 0);
-        $variables[0] = $i / $steps; // Assume λ_1 varia entre 0 e 1
-        $variables[1] = 1 - $variables[0]; // λ_2 é complementar
-
-        if (!$constraints['non_negative']($variables) || !$constraints['sum_to_one']($variables)) {
-            continue; // Ignora soluções inválidas
-        }
-
-        $objectiveValue = $objectiveFunction($variables);
-
-        if ($objectiveValue > $bestObjectiveValue) {
-            $bestObjectiveValue = $objectiveValue;
-            $bestLambdas = $variables;
+        // Resolver o problema
+        try {
+            $result = $simplex->solve();
+            return $result;
+        } catch (\Exception $e) {
+            return ['error' => $e->getMessage()];
         }
     }
 
-    return $bestLambdas;
-}
+//function solveOptimizationProblem($objectiveFunction, $numVariables) {
+   // $variables = array_fill(0, $numVariables, 0); // Inicializa as variáveis lambda_i
+
+    // Restrições:
+   // $constraints = [
+        // Cada λ_i ≥ 0
+       // 'non_negative' => function($variables) {
+           // foreach ($variables as $var) {
+               // if ($var < 0) return false;
+           // }
+           // return true;
+       // },
+        // Soma de λ_i = 1
+       // 'sum_to_one' => function($variables) {
+           // return abs(array_sum($variables) - 1) < 1e-6;
+       // }
+   // ];
+
+   // $bestLambdas = null;
+   // $bestObjectiveValue = PHP_FLOAT_MIN;
+
+   // $steps = 100;
+    //for ($i = 0; $i <= $steps; $i++) {
+       // $variables = array_fill(0, $numVariables, 0);
+       // $variables[0] = $i / $steps; // Assume λ_1 varia entre 0 e 1
+       // $variables[1] = 1 - $variables[0]; // λ_2 é complementar
+
+       // if (!$constraints['non_negative']($variables) || !$constraints['sum_to_one']($variables)) {
+           // continue; // Ignora soluções inválidas
+       // }
+
+       // $objectiveValue = $objectiveFunction($variables);
+
+       // if ($objectiveValue > $bestObjectiveValue) {
+           // $bestObjectiveValue = $objectiveValue;
+           // $bestLambdas = $variables;
+       // }
+   // }
+
+   // return $bestLambdas;
+//}
 
 private function normalizeVector($vector)
 {
@@ -1124,83 +1151,82 @@ private function normalizeVector($vector)
     }, $vector);
 }
 
-public function calculateW($resultVector1, $resultVector2, $initialVector, $bestLambdas)
-{
+//public function calculateW($resultVector1, $resultVector2, $initialVector, $bestLambdas)
+//{
     // Exemplos de entrada
-    $resultVector1 = [0.3, 0.2, 0.1];
-    $resultVector2 = [0.4, 0.3, 0.2];
-    $initialVector = [0.5, 0.4, 0.3];
-    $bestLambdas = [0.0, 1.0];
+   // $resultVector1 = [0.3, 0.2, 0.1];
+   // $resultVector2 = [0.4, 0.3, 0.2];
+   // $initialVector = [0.5, 0.4, 0.3];
+    //$bestLambdas = [0.0, 1.0];
 
     // Verificação de entrada
-    if (empty($resultVector1) || empty($resultVector2) || empty($initialVector) || empty($bestLambdas)) {
-        throw new \InvalidArgumentException("Nenhum dos vetores de entrada pode estar vazio.");
-    }
+   // if (empty($resultVector1) || empty($resultVector2) || empty($initialVector) || empty($bestLambdas)) {
+       // throw new \InvalidArgumentException("Nenhum dos vetores de entrada pode estar vazio.");
+   // }
 
-    $m = count($initialVector); // Número de restrições
-    $n = count($bestLambdas);   // Número de variáveis lambda
+   // $m = count($initialVector); // Número de restrições
+   // $n = count($bestLambdas);   // Número de variáveis lambda
 
     // Validação de consistência
-    if (count($resultVector1) !== $m || count($resultVector2) !== $m) {
-        throw new \InvalidArgumentException("O tamanho de resultVector1 e resultVector2 deve ser igual ao número de restrições.");
-    }
-    if ($n < 2) {
-        throw new \InvalidArgumentException("O vetor bestLambdas deve conter pelo menos dois valores (λ1 e λ2).");
-    }
+   // if (count($resultVector1) !== $m || count($resultVector2) !== $m) {
+       // throw new \InvalidArgumentException("O tamanho de resultVector1 e resultVector2 deve ser igual ao número de restrições.");
+   // }
+   // if ($n < 2) {
+        //throw new \InvalidArgumentException("O vetor bestLambdas deve conter pelo menos dois valores (λ1 e λ2).");
+   // }
 
     // Inicializar o maior valor de W
-    $maxW = 0;
+   // $maxW = 0;
 
     // Construção das restrições
-    for ($i = 0; $i < $m; $i++) {
+   // for ($i = 0; $i < $m; $i++) {
         // Inicializar as restrições para cada linha
-        $lhsPositive = $initialVector[$i]; // Atribui o valor do vetor inicial na posição $i à variável Left-Hand Side for positive
-        $lhsNegative = -$initialVector[$i]; // Atribui o valor negativo do vetor inicial na posição $i à variável Left-Hand Side negative
+       // $lhsPositive = $initialVector[$i]; // Atribui o valor do vetor inicial na posição $i à variável Left-Hand Side for positive
+       // $lhsNegative = -$initialVector[$i]; // Atribui o valor negativo do vetor inicial na posição $i à variável Left-Hand Side negative
 
         // Aplicação dos valores de lambda para calcular
-        for ($j = 0; $j < $n; $j++) {
-            $lhsPositive -= $resultVector1[$i] * $bestLambdas[$j];
-            $lhsNegative += $resultVector2[$i] * $bestLambdas[$j];
-        }
-
+       // for ($j = 0; $j < $n; $j++) {
+           // $lhsPositive -= $resultVector1[$i] * $bestLambdas[$j];
+           // $lhsNegative += $resultVector2[$i] * $bestLambdas[$j];
+      //  }
         // Determinar o maior valor para W considerando as restrições
-        $wCandidate = max(0, max($lhsPositive, $lhsNegative));
+       // $wCandidate = max(0, max($lhsPositive, $lhsNegative));
 
         // Atualizar o maior valor encontrado
-        $maxW = max($maxW, $wCandidate);
-    }
+       // $maxW = max($maxW, $wCandidate);
+   // }
 
     // Retornar o maior valor calculado para W
-    return $maxW;
-}
+   // return $maxW;
+//}
 
-public function calculateOptimalSolution($bestLambdas, $W_star)
-{
+//public function calculateOptimalSolution($bestLambdas, $W_star)
+//{
    
     // Verifica se $bestLambdas é válido
-    if (!is_array($bestLambdas) || count($bestLambdas) < 2) {
-        throw new InvalidArgumentException("O array \$bestLambdas deve conter pelo menos dois valores.");
-    }
+    //if (!is_array($bestLambdas) || count($bestLambdas) < 2) {
+       // throw new InvalidArgumentException("O array \$bestLambdas deve conter pelo menos dois valores.");
+    //}
 
     // Definindo os melhores valores de λ
-    $lambda1_star = $bestLambdas[0]; // Primeiro valor de λ
-    $lambda2_star = $bestLambdas[1]; // Segundo valor de λ
+   // $lambda1_star = $bestLambdas[0]; // Primeiro valor de λ
+    //$lambda2_star = $bestLambdas[1]; // Segundo valor de λ
 
     // Verifica se W* é válido
-    if (!is_numeric($W_star)) {
-        throw new InvalidArgumentException("W* deve ser um número.");
-    }
+   // if (!is_numeric($W_star)) {
+      //  throw new InvalidArgumentException("W* deve ser um número.");
+   // }
 
     // A solução ótima será composta pelos valores das variáveis λ1*, λ2* e W*
-    $optimalSolution = [
-        'lambda1_star' => $lambda1_star,
-        'lambda2_star' => $lambda2_star,
-        'W_star' => $W_star,
-    ];
+    //$optimalSolution = [
+       // 'lambda1_star' => $lambda1_star,
+       // 'lambda2_star' => $lambda2_star,
+       // 'W_star' => $W_star,
+    //];
 
     // Retornar a solução ótima
-    return $optimalSolution;
-}
+   // return $optimalSolution;
+//}
     
     //Constroi o vetor de previsão
     public function PredictionVector($matrix, $paper, $states_number, $state_type)  
