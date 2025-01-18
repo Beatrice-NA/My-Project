@@ -9,6 +9,7 @@ use Yii;
 use MathPHP\LinearAlgebra\MatrixFactory;
 use PHPSimplex\Simplex;
 
+
 //date_default_timezone_set("america/bahia");
 
 class MainController extends Controller
@@ -1636,8 +1637,11 @@ class MainController extends Controller
     public function actionSegundaOrdemTest1()
 {
     $this->layout = 'navbar';
+
     $model = new ConsultaModel;
+
     $post = Yii::$app->request->post();
+
     $matrix = [];
     $initialVector = [];
     $transposedVector = [];
@@ -1723,14 +1727,22 @@ class MainController extends Controller
             Yii::error("Erro no processamento: " . $e->getMessage());
         }
 
-             $resultado = $model->calcularSistemaLinear(); 
+        $objective = [23/50, 207/500, 0, 0, 0];
+        $constraints = [
+            [23/50, -207/500, 1, 0, 0, 111/250],
+            [-23/50, 207/500, 0, 1, 0, 4/9],
+            [1, 1, 0, 0, 1, 1]
+        ];
+        
+        $simplex = new Simplex($objective, $constraints);
+        try {
+            $solution = $simplex->solve();
+            print_r($solution);
+        } catch (\Exception $e) {
+            echo "Erro: " . $e->getMessage();
+        }
 
-            if (isset($resultado['error'])) {
-                echo "Erro: " . $resultado['error'];
-            } else {
-                echo "Solução ótima: " . $resultado['optimalValue'] . "<br>";
-                echo "Solução: " . implode(", ", $resultado['solution']);
-            }
+            
         //try {
             // Obter o maior valor de W
            // $W_star = $model->calculateW($resultVector1, $resultVector2, $initialVector, $bestLambdas);
@@ -1754,7 +1766,7 @@ class MainController extends Controller
 
         return $this->render('result-segunda-ordem-test1', compact(
             'matrixSegundaOrdem', 'three_state_matrix1', 'initialVector',
-            'transposedVector', 'resultVector1', 'resultVector2', 'optimalValue', 'solution', 'currentVector =>[0, 1, 0]', 'nextVector'
+            'transposedVector', 'resultVector1', 'resultVector2', 'solution', 'currentVector =>[0, 1, 0]', 'nextVector'
         ));
     }
 

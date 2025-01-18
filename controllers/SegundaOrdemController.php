@@ -140,14 +140,20 @@ class SegundaOrdemController extends Controller
             Yii::error("Erro no processamento: " . $e->getMessage());
         }
 
-        $resultado = $model->calcularSistemaLinear();
+        $objective = [23/50, 207/500, 0, 0, 0];
+        $constraints = [
+                 [23/50, -207/500, 1, 0, 0, 111/250],
+                 [-23/50, 207/500, 0, 1, 0, 4/9],
+                 [1, 1, 0, 0, 1, 1]
+            ];
 
-      if (isset($resultado['error'])) {
-        echo "Erro: " . $resultado['error'];
-      } else {
-        echo "Solução ótima: " . $resultado['optimalValue'] . "<br>";
-        echo "Solução: " . implode(", ", $resultado['solution']);
-      }
+        $simplex = new Simplex($objective, $constraints);
+        try {
+             $solution = $simplex->solve();
+                print_r($solution);
+        } catch (\Exception $e) {
+                 echo "Erro: " . $e->getMessage();
+                }
         //try {
             // Obter o maior valor de W
            // $W_star = $model->calculateW($resultVector1, $resultVector2, $initialVector, $bestLambdas);
@@ -180,7 +186,6 @@ class SegundaOrdemController extends Controller
                  'transposedVector' => $transposedVector,
                  'resultVector1' => $resultVector1,
                  'resultVector2' => $resultVector2,
-                 'optimalValue' => $optimalValue,
                 'solution' => $solution,
                  //'optimalSolution' => $optimalSolution,
                  //'result' => $result,  

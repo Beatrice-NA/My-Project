@@ -4,15 +4,15 @@ use app\models\ConsultaModel;
 use yii\bootstrap\ActiveForm;
 use yii\helpers\Html;
 use yii\jui\DatePicker;
+use PHPSimplex\Simplex;
 
 ini_set('max_execution_time', 0); //300 seconds = 5 minutes
 ini_set('memory_limit', '-1');
 
-require_once __DIR__ . '/vendor/autoload.php'; 
+require_once __DIR__ . '/PHPSimplex/Simplex.php';  
 
-use PHPSimplex\Simplex; 
-
-$simplex = new Simplex($objective, $constraints);
+echo "<h2>Otimização com Simplex</h2>";
+echo "<a href='/main/solve-simplex'>Resolver Problema</a>";
 
 $consultaModel = new ConsultaModel;
 

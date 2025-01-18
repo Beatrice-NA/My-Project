@@ -4,88 +4,98 @@ namespace PHPSimplex;
 
 class Simplex
 {
-    private $objective;  // Função objetivo
-    private $constraints; // Restrições
-    private $tableau;    // Tableau do Simplex
-    private $numVariables;
-    private $numConstraints;
+    private $tableau = []; // Tableau do Simplex
 
     public function __construct($objective, $constraints)
     {
-        $this->objective = $this->parseObjective($objective);
-        $this->constraints = $this->parseConstraints($constraints);
-
-        $this->numVariables = count($this->objective);
-        $this->numConstraints = count($this->constraints);
-
-        $this->initializeTableau();
+        $this->initializeTableau($objective, $constraints);
     }
 
-    private function parseObjective($objective)
+    private function initializeTableau($objective, $constraints)
     {
-        return array_map('floatval', $objective);
-    }
+        // Adicionar a linha Z (função objetivo)
+        $this->tableau[] = array_merge($objective, [0]);
 
-    private function parseConstraints($constraints)
-    {
-        $parsedConstraints = [];
+        // Adicionar as restrições como linhas na tabela
         foreach ($constraints as $constraint) {
-            $parsedConstraints[] = $this->parseConstraint($constraint);
+            $this->tableau[] = $constraint;
         }
-        return $parsedConstraints;
-    }
-
-    private function parseConstraint($constraint)
-    {
-        // Melhorar validação do formato da restrição
-        $parts = preg_split('/(<=|>=|=)/', $constraint, -1, PREG_SPLIT_DELIM_CAPTURE);
-        if (count($parts) !== 3) {
-            throw new \Exception("Formato de restrição inválido: $constraint");
-        }
-
-        // Processar coeficientes e valores
-        $coefficients = array_map('floatval', preg_split('/[\s+\-*\/]/', trim($parts[0])));
-        $operator = trim($parts[1]);
-        $value = floatval(trim($parts[2]));
-
-        return [
-            'coefficients' => $coefficients,
-            'operator' => $operator,
-            'value' => $value,
-        ];
-    }
-
-    private function initializeTableau()
-    {
-        $this->tableau = [];
-
-        // Adicionar restrições ao tableau
-        foreach ($this->constraints as $constraint) {
-            $row = $constraint['coefficients'];
-            $row[] = $constraint['value'];
-            $this->tableau[] = $row;
-        }
-
-        // Adicionar a função objetivo (coeficientes negativos)
-        $objectiveRow = array_map(fn($value) => -$value, $this->objective);
-        $objectiveRow[] = 0;
-        $this->tableau[] = $objectiveRow;
     }
 
     public function solve()
     {
-        $iterations = 0;
-
-        while ($this->hasNegativeCoefficientInObjective()) {
-            if (++$iterations > 1000) {
-                throw new \Exception("Número máximo de iterações atingido.");
+        while ($this->canImprove()) {
+            $pivotColumn = $this->findPivotColumn();
+            $pivotRow = $this->findPivotRow($pivotColumn);
+            if ($pivotRow === null) {
+                throw new \Exception("Problema não tem solução viável.");
             }
+            $this->performPivot($pivotRow, $pivotColumn);
+        }
+        return $this->getSolution();
+    }
 
-            $pivotColumn = $this->selectPivotColumn();
-            $pivotRow = $this->selectPivotRow($pivotColumn);
-            $this->performPivotOperation($pivotRow, $pivotColumn);
+    private function canImprove()
+    {
+        // Verificação se ainda há coeficientes positivos na linha Z
+        foreach ($this->tableau[0] as $value) {
+            if ($value > 0) return true;
+        }
+        return false;
+    }
+
+    private function findPivotColumn()
+    {
+        return array_search(max($this->tableau[0]), $this->tableau[0]);
+    }
+
+    private function findPivotRow($pivotColumn)
+    {
+        $ratios = [];
+        for ($i = 1; $i < count($this->tableau); $i++) {
+            $row = $this->tableau[$i];
+            if ($row[$pivotColumn] > 0) { // Evitar divisão por zero ou valores negativos
+                $ratios[$i] = $row[count($row) - 1] / $row[$pivotColumn];
+            }
+        }
+        if (empty($ratios)) {
+            return null; // Nenhum valor positivo encontrado
+        }
+        return array_search(min($ratios), $ratios);
+    }
+
+    private function performPivot($pivotRow, $pivotColumn)
+    {
+        $pivotValue = $this->tableau[$pivotRow][$pivotColumn];
+
+        // Normalizar a linha do pivô
+        foreach ($this->tableau[$pivotRow] as &$value) {
+            $value /= $pivotValue;
         }
 
-        return $this->getSolution();
+        // Atualizar as outras linhas
+        for ($i = 0; $i < count($this->tableau); $i++) {
+            if ($i === $pivotRow) continue;
+            $factor = $this->tableau[$i][$pivotColumn];
+            foreach ($this->tableau[$i] as $j => &$value) {
+                $value -= $factor * $this->tableau[$pivotRow][$j];
+            }
+        }
+    }
+
+    private function getSolution()
+    {
+        $solution = [];
+        $numVariables = count($this->tableau[0]) - count($this->tableau) - 1;
+        for ($i = 0; $i < $numVariables; $i++) {
+            $solution["x{$i}"] = 0;
+        }
+        for ($i = 1; $i < count($this->tableau); $i++) {
+            $column = array_search(1, $this->tableau[$i]);
+            if ($column !== false && $column < $numVariables) {
+                $solution["x{$column}"] = $this->tableau[$i][count($this->tableau[$i]) - 1];
+            }
+        }
+        return $solution;
     }
 }

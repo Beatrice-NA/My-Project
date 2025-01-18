@@ -45,6 +45,10 @@ class ConsultaModel extends Model
     private $resultVector1;
     private $resultVector2;
     private $simplex;
+    private $objective ;  
+    private $constraints; 
+    private $tableau;
+    private $Variables;
     
     
     
@@ -1072,29 +1076,21 @@ class ConsultaModel extends Model
         return $resultVector2;
     }
 
-    public function calcularSistemaLinear()
+    public function calcularSimplex()
     {
         // Configuração do problema de otimização
-        $objective = [1, 0, 0]; // Maximizar a Função objetivo W representado pelo primeiro coefisente(os dois zeros são números artificais)
+        $objective = [23/50, 207/500, 0, 0, 0]; // Maximizar a Função objetivo W representado pelo primeiro coefisente(os dois zeros são números artificais)
         
         $constraints = [
-            ['1', '0', '-0.460', '-0.414', '>=', 0.444],  // Restrição 1 com corficiente
-            ['1', '0', '0.460', '0.414', '>=', -0.444],   // Restrição 2 com coeficiente
-            [0, 1, 1, 0, '=', 1],   // Soma das variáveis de decisão deve ser 1
-            [0, 1, 0, 0, '>=', 0],     // lambda_1 >= 0
-            [0, 0, 1, 0, '>=', 0],     // lambda_2 >= 0
+            [23/50, -207/500, 1, 0, 0, 111/250],  // Restrição 1 com corficiente
+            [-23/50, 207/500, 0, 1, 0, 4/9],   // Restrição 2 com coeficiente
+            [1, 1, 0, 0, 1, 1],   // Soma das variáveis de decisão deve ser 1
+           
         ];
 
-        // Instanciar a classe Simplex
         $simplex = new Simplex($objective, $constraints);
-
-        // Resolver o problema
-        try {
-            $result = $simplex->solve();
-            return $result;
-        } catch (\Exception $e) {
-            return ['error' => $e->getMessage()];
-        }
+        return $simplex->solve();
+        
     }
 
 //function solveOptimizationProblem($objectiveFunction, $numVariables) {
