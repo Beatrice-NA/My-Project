@@ -1733,16 +1733,22 @@ class MainController extends Controller
             Yii::error("Erro no processamento: " . $e->getMessage());
         }
 
-        $objective = [3, 2];  // Minimizar W transformado para maximizar -W
+        $objective = [5, 4]; // Função objetivo (simplificada, sem variáveis de decisão aqui)
         $constraints = [
-            [-1, 1, 1, 0, 4],  // -x3 + x1 + x2 = 4
-            [-1, 2, 1, 0, 5],  // -x4 + 2x1 + x2 = 5
-            [1, 1, 0, 0, 1]    // x1 + x2 = 1 (restrição já em forma de igualdade)
+             [6, 4, 1, 0, 0, 24],  // 6x1 + 4x2 + x3 = 24
+             [1, 2, 0, 1, 0, 6],   // x1 + 2x2 + x4 = 6
+             [-1, 1, 0, 0, 1, 1],  // -x1 + x2 + x5 = 1
         ];
-
         $simplex = new Simplex($objective, $constraints);
         $solution = $simplex->solve();
-         print_r($solution); 
+
+    // Adiciona o método getTableau() na classe Simplex para acesso ao tableau inicial
+    echo "Tableau Inicial:\n";
+    var_dump($simplex->getTableau());
+
+    // Mostra a solução final
+    echo "Solução:\n";
+    var_dump($solution);
 
             
         //try {

@@ -1079,36 +1079,44 @@ class ConsultaModel extends Model
 
    
     public function prepareSimplexData()
-    {
+{
+    try {
+        // Processar a função objetivo
+        $objective = array_map('floatval', explode(',', $this->objective_function));
 
-        try {
-            // Processar a função objetivo
-            $objective = array_map('floatval', explode(',', $this->objective_function));
+        // Processar as restrições
+        $constraints = array_map(function ($line) {
+            return array_map('floatval', preg_split('/,\s*/', $line));
+        }, explode("\n", trim($this->constraints)));
 
-            // Processar as restrições
-            $constraints = array_map(function ($line) {
-                return array_map('floatval', preg_split('/,\s*/', $line));
-            }, explode("\n", trim($this->constraints)));
+        // Instanciar a classe Simplex
+        $simplex = new Simplex($objective, $constraints);
 
-            // Instanciar a classe Simplex
-            $simplex = new Simplex($objective, $constraints);
+        // Resolver o problema
+        $solution = $simplex->solve();
 
-            // Resolver o problema
-            $solution = $simplex->solve();
+        // Depurar os dados intermediários
+        var_dump([
+            'objective' => $objective,
+            'constraints' => $constraints,
+            'tableau_inicial' => $simplex->getTableau(),
+            'solution' => $solution,
+        ]);
 
-            return [
-                'objective' => $objective,
-                'constraints' => $constraints,
-                'solution' => $solution,  // Adicionando a solução no retorno
-            ];
-        } catch (\Exception $e) {
-            return [
-                'success' => false,
-                'error' => $e->getMessage(),
-            ];
-        }    
-        
+        // Retornar os dados processados
+        return [
+            'objective' => $objective,
+            'constraints' => $constraints,
+            'solution' => $solution,
+        ];
+    } catch (\Exception $e) {
+        return [
+            'success' => false,
+            'error' => $e->getMessage(),
+        ];
     }
+}
+
 
 //function solveOptimizationProblem($objectiveFunction, $numVariables) {
    // $variables = array_fill(0, $numVariables, 0); // Inicializa as variáveis lambda_i

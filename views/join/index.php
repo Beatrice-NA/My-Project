@@ -439,11 +439,14 @@ $consultaModel = new ConsultaModel;
 
     <h1>Solução do Problema Simplex</h1>
 
-    <p>A solução ótima do problema de minimização é:</p>
-    <ul>
-        <?php foreach ($solution as $variable => $value): ?>
-            <li><?= Html::encode($variable) ?> = <?= Html::encode($value) ?></li>
-        <?php endforeach; ?>
-    </ul>
+<p>A solução ótima do problema de minimização é:</p>
+<ul>
+    <?php foreach ($solution as $variable => $value): ?>
+        <li><?= Html::encode($variable) ?> = <?= Html::encode($value) ?></li>
+    <?php endforeach; ?>
+</ul>
+
+
+
 
 </div>

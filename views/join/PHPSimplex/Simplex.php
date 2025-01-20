@@ -12,45 +12,43 @@ class Simplex
     {
         $this->objective = $objective;
         $this->constraints = $constraints;
-        $this->initializeTableau($objective, $constraints);
+        $this->initializeTableau();
     }
 
-    
-     // Inicializa o tableau para o Simplex, incluindo variáveis de folga e artificiais.
-     
-    private function initializeTableau($objective, $constraints)
+    // Inicializa o tableau para o Simplex
+    private function initializeTableau()
     {
-        $numConstraints = count($constraints);
-        $numVariables = count($objective);
+        $numConstraints = count($this->constraints);
+        $numVariables = count($this->objective);
 
-        // Linha Z (função objetivo, minimização: coeficientes negativos)
+        // Adicionar a linha Z (função objetivo para minimização)
         $this->tableau[] = array_merge(
-            array_map(fn($coef) => -1 * $coef, $objective), // Coeficientes da função objetivo
-            array_fill(0, $numConstraints, 0),             // Coeficientes das variáveis de folga
-            array_fill(0, $numConstraints, 1),             // Coeficientes das variáveis artificiais
-            [0]                                            // Valor da função objetivo (à direita)
+            array_map(fn($coef) => -1 * $coef, $this->objective), // Coeficientes negativos para minimização
+            array_fill(0, $numConstraints, -1000), //  alta valor para variáveis artificiais
+            [0] // Valor inicial de Z
         );
 
-        // Adiciona as restrições ao tableau
-        foreach ($constraints as $index => $constraint) {
+        // Adicionar as restrições
+        foreach ($this->constraints as $index => $constraint) {
+            $rhsValue = $constraint[$numVariables]; // Último elemento é o lado direito da equação (RHS) 
+            $constraintCoefficients = array_slice($constraint, 0, $numVariables);
+
+            // Criar a linha da restrição
             $this->tableau[] = array_merge(
-                array_slice($constraint, 0, $numVariables),  // Coeficientes das variáveis originais
-                array_fill(0, $numConstraints, 0),           // Espaço para variáveis de folga
-                array_fill(0, $numConstraints, 0),           // Espaço para variáveis artificiais
-                [$constraint[$numVariables]]                // Valor à direita da equação
+                $constraintCoefficients,
+                array_fill(0, $numConstraints, 0), // Folgas
+                array_fill(0, $numConstraints, 0), // Artificiais
+                [$rhsValue]
             );
 
-            // Adicionar 1 na coluna da variável artificial ou de folga
+            // Adicionar 1 na coluna da variável de folga correspondente
             $this->tableau[$index + 1][$numVariables + $index] = 1;
         }
     }
 
-    
-     //étodo principal para resolver o problema usando o Simplex.
-     
     public function solve()
     {
-        // Fase 1: Resolver para as variáveis artificiais
+        // Resolver em duas fases (Fase 1: Artificiais, Fase 2: Original)
         while ($this->canImprove()) {
             $pivotColumn = $this->findPivotColumn();
             $pivotRow = $this->findPivotRow($pivotColumn);
@@ -60,10 +58,8 @@ class Simplex
             $this->performPivot($pivotRow, $pivotColumn);
         }
 
-        // Fase 2: Resolver o problema original sem as artificiais
         $this->removeArtificialVariables();
 
-        // Repetir o processo até encontrar a solução ótima
         while ($this->canImprove()) {
             $pivotColumn = $this->findPivotColumn();
             $pivotRow = $this->findPivotRow($pivotColumn);
@@ -76,46 +72,35 @@ class Simplex
         return $this->getSolution();
     }
 
-    
-     // Verifica se ainda é possível melhorar a solução (minimização).
-     
     private function canImprove()
     {
         foreach ($this->tableau[0] as $value) {
-            if ($value < 0) return true; // Minimização busca valores negativos
+            if ($value < 0) return true;
         }
         return false;
     }
 
-    
-     // Encontra a coluna pivô com o menor valor na linha Z.
-     
     private function findPivotColumn()
-    {
-        return array_search(min($this->tableau[0]), $this->tableau[0]);
-    }
+{
+    return array_search(min($this->tableau[0]), $this->tableau[0]);
+}
 
-    
-     // Encontra a linha pivô com base nas razões mínimas (restrições).
-     
     private function findPivotRow($pivotColumn)
-    {
-        $ratios = [];
-        for ($i = 1; $i < count($this->tableau); $i++) {
-            $row = $this->tableau[$i];
-            if ($row[$pivotColumn] > 0) { // Evita divisão por zero ou valores negativos
-                $ratios[$i] = $row[count($row) - 1] / $row[$pivotColumn];
-            }
+{
+    $ratios = [];
+    for ($i = 1; $i < count($this->tableau); $i++) {
+        $row = $this->tableau[$i];
+        // Verifica se o elemento no pivotColumn é positivo e suficientemente grande para evitar divisões por quase zero
+        if (abs($row[$pivotColumn]) > 1e-10) { 
+            $ratios[$i] = $row[count($row) - 1] / $row[$pivotColumn];
         }
-        if (empty($ratios)) {
-            return null; // Nenhuma razão válida encontrada
-        }
-        return array_search(min($ratios), $ratios);
     }
+    if (empty($ratios)) {
+        return null; // Nenhuma razão válida encontrada
+    }
+    return array_search(min($ratios), $ratios);
+}
 
-    
-      //Realiza o pivoteamento em torno de um elemento pivô.
-     
     private function performPivot($pivotRow, $pivotColumn)
     {
         $pivotValue = $this->tableau[$pivotRow][$pivotColumn];
@@ -135,9 +120,6 @@ class Simplex
         }
     }
 
-    
-      //Remove as variáveis artificiais do tableau após a Fase 1.
-     
     private function removeArtificialVariables()
     {
         $numOriginalVariables = count($this->objective);
@@ -148,25 +130,33 @@ class Simplex
         }
     }
 
-    
-      //Obtém a solução final do problema.
-     
+    public function getTableau()
+    {
+        return $this->tableau;
+    }
+
     private function getSolution()
     {
         $solution = [];
-        $numVariables = count($this->objective);
+        $numVariables = count($this->objective);  // O número de variáveis é dado pela quantidade de coeficientes na função objetivo.
+        
+        // Inicializa todas as variáveis com valor 0
         for ($i = 0; $i < $numVariables; $i++) {
             $solution["x{$i}"] = 0;
         }
-
-        // Encontrar valores das variáveis básicas
+    
+        // Itera sobre as linhas do tableau (exceto a linha de custos/função objetivo)
         for ($i = 1; $i < count($this->tableau); $i++) {
-            $column = array_search(1, $this->tableau[$i]);
-            if ($column !== false && $column < $numVariables) {
-                $solution["x{$column}"] = $this->tableau[$i][count($this->tableau[$i]) - 1];
+            // Verifica se há exatamente um valor 1 em uma coluna (indicando uma variável básica)
+            $columnIndex = array_search(1, $this->tableau[$i]);
+    
+            // Verifica se a variável básica encontrada está dentro do número de variáveis
+            if ($columnIndex !== false && $columnIndex < $numVariables) {
+                // O valor da variável básica será o valor na última coluna (a constante)
+                $solution["x{$columnIndex}"] = $this->tableau[$i][count($this->tableau[$i]) - 1];
             }
         }
-
+    
         return $solution;
-    }
+    }    
 }
