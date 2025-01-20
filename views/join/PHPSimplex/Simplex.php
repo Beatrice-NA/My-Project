@@ -15,9 +15,9 @@ class Simplex
         $this->initializeTableau($objective, $constraints);
     }
 
-    /**
-     * Inicializa o tableau para o Simplex, incluindo variáveis de folga e artificiais.
-     */
+    
+     // Inicializa o tableau para o Simplex, incluindo variáveis de folga e artificiais.
+     
     private function initializeTableau($objective, $constraints)
     {
         $numConstraints = count($constraints);
@@ -45,9 +45,9 @@ class Simplex
         }
     }
 
-    /**
-     * Método principal para resolver o problema usando o Simplex.
-     */
+    
+     //étodo principal para resolver o problema usando o Simplex.
+     
     public function solve()
     {
         // Fase 1: Resolver para as variáveis artificiais
@@ -76,9 +76,9 @@ class Simplex
         return $this->getSolution();
     }
 
-    /**
-     * Verifica se ainda é possível melhorar a solução (minimização).
-     */
+    
+     // Verifica se ainda é possível melhorar a solução (minimização).
+     
     private function canImprove()
     {
         foreach ($this->tableau[0] as $value) {
@@ -87,23 +87,23 @@ class Simplex
         return false;
     }
 
-    /**
-     * Encontra a coluna pivô com o menor valor na linha Z.
-     */
+    
+     // Encontra a coluna pivô com o menor valor na linha Z.
+     
     private function findPivotColumn()
     {
         return array_search(min($this->tableau[0]), $this->tableau[0]);
     }
 
-    /**
-     * Encontra a linha pivô com base nas razões mínimas (restrições).
-     */
+    
+     // Encontra a linha pivô com base nas razões mínimas (restrições).
+     
     private function findPivotRow($pivotColumn)
     {
         $ratios = [];
         for ($i = 1; $i < count($this->tableau); $i++) {
             $row = $this->tableau[$i];
-            if ($row[$pivotColumn] > 0) { // Evitar divisão por zero ou valores negativos
+            if ($row[$pivotColumn] > 0) { // Evita divisão por zero ou valores negativos
                 $ratios[$i] = $row[count($row) - 1] / $row[$pivotColumn];
             }
         }
@@ -113,9 +113,9 @@ class Simplex
         return array_search(min($ratios), $ratios);
     }
 
-    /**
-     * Realiza o pivoteamento em torno de um elemento pivô.
-     */
+    
+      //Realiza o pivoteamento em torno de um elemento pivô.
+     
     private function performPivot($pivotRow, $pivotColumn)
     {
         $pivotValue = $this->tableau[$pivotRow][$pivotColumn];
@@ -135,9 +135,9 @@ class Simplex
         }
     }
 
-    /**
-     * Remove as variáveis artificiais do tableau após a Fase 1.
-     */
+    
+      //Remove as variáveis artificiais do tableau após a Fase 1.
+     
     private function removeArtificialVariables()
     {
         $numOriginalVariables = count($this->objective);
@@ -148,9 +148,9 @@ class Simplex
         }
     }
 
-    /**
-     * Obtém a solução final do problema.
-     */
+    
+      //Obtém a solução final do problema.
+     
     private function getSolution()
     {
         $solution = [];
