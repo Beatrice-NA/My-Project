@@ -9,10 +9,10 @@ use PHPSimplex\Simplex;
 ini_set('max_execution_time', 0); //300 seconds = 5 minutes
 ini_set('memory_limit', '-1');
 
-require_once __DIR__ . '/PHPSimplex/Simplex.php';  
 
 echo "<h2>Otimização com Simplex</h2>";
-echo "<a href='/main/solve-simplex'>Resolver Problema</a>";
+
+$this->title = 'Solução Simplex';
 
 $consultaModel = new ConsultaModel;
 
@@ -436,4 +436,14 @@ $consultaModel = new ConsultaModel;
     </div>
 
     <?php $form = ActiveForm::end() ?>
+
+    <h1>Solução do Problema Simplex</h1>
+
+    <p>A solução ótima do problema de minimização é:</p>
+    <ul>
+        <?php foreach ($solution as $variable => $value): ?>
+            <li><?= Html::encode($variable) ?> = <?= Html::encode($value) ?></li>
+        <?php endforeach; ?>
+    </ul>
+
 </div>

@@ -1665,6 +1665,12 @@ class MainController extends Controller
     $data = [];
     $resultado = [];
     $simplex = [];
+    $objective = [] ;  
+    $constraints = []; 
+    $tableau = [];
+    $Variables = [];
+    $bounds = [];
+    $numConstraints = [];
     
     if ($model->load($post) && $model->validate() && $model->periodo) {
         $start = \DateTime::createFromFormat('d/m/YH:i:s', $model->inicio . '24:00:00')->modify('-1 day');
@@ -1727,20 +1733,16 @@ class MainController extends Controller
             Yii::error("Erro no processamento: " . $e->getMessage());
         }
 
-        $objective = [23/50, 207/500, 0, 0, 0];
+        $objective = [3, 2];  // Minimizar W transformado para maximizar -W
         $constraints = [
-            [23/50, -207/500, 1, 0, 0, 111/250],
-            [-23/50, 207/500, 0, 1, 0, 4/9],
-            [1, 1, 0, 0, 1, 1]
+            [-1, 1, 1, 0, 4],  // -x3 + x1 + x2 = 4
+            [-1, 2, 1, 0, 5],  // -x4 + 2x1 + x2 = 5
+            [1, 1, 0, 0, 1]    // x1 + x2 = 1 (restrição já em forma de igualdade)
         ];
-        
+
         $simplex = new Simplex($objective, $constraints);
-        try {
-            $solution = $simplex->solve();
-            print_r($solution);
-        } catch (\Exception $e) {
-            echo "Erro: " . $e->getMessage();
-        }
+        $solution = $simplex->solve();
+         print_r($solution); 
 
             
         //try {
@@ -1766,7 +1768,7 @@ class MainController extends Controller
 
         return $this->render('result-segunda-ordem-test1', compact(
             'matrixSegundaOrdem', 'three_state_matrix1', 'initialVector',
-            'transposedVector', 'resultVector1', 'resultVector2', 'solution', 'currentVector =>[0, 1, 0]', 'nextVector'
+            'transposedVector', 'resultVector1', 'resultVector2', 'objective', 'constraints','solution', 'currentVector =>[0, 1, 0]', 'nextVector'
         ));
     }
 

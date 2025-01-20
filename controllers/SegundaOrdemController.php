@@ -61,6 +61,12 @@ class SegundaOrdemController extends Controller
         $data = 0;
         $resultado = 0;
         $simplex = 0;
+        $objective = 0 ;  
+        $constraints = 0; 
+        $tableau = 0;
+        $Variables = 0;
+        $bounds = 0;
+        $numConstraints = 0;
     
 
         // uso do uniqueId
@@ -140,20 +146,17 @@ class SegundaOrdemController extends Controller
             Yii::error("Erro no processamento: " . $e->getMessage());
         }
 
-        $objective = [23/50, 207/500, 0, 0, 0];
+        $objective = [3, 2];  // Minimizar W transformado para maximizar -W
         $constraints = [
-                 [23/50, -207/500, 1, 0, 0, 111/250],
-                 [-23/50, 207/500, 0, 1, 0, 4/9],
-                 [1, 1, 0, 0, 1, 1]
-            ];
+            [-1, 1, 1, 0, 4],  // -x3 + x1 + x2 = 4
+            [-1, 2, 1, 0, 5],  // -x4 + 2x1 + x2 = 5
+            [1, 1, 0, 0, 1]    // x1 + x2 = 1 (restrição já em forma de igualdade)
+        ];
 
         $simplex = new Simplex($objective, $constraints);
-        try {
-             $solution = $simplex->solve();
-                print_r($solution);
-        } catch (\Exception $e) {
-                 echo "Erro: " . $e->getMessage();
-                }
+        $solution = $simplex->solve();
+        print_r($solution);
+       
         //try {
             // Obter o maior valor de W
            // $W_star = $model->calculateW($resultVector1, $resultVector2, $initialVector, $bestLambdas);
@@ -186,7 +189,9 @@ class SegundaOrdemController extends Controller
                  'transposedVector' => $transposedVector,
                  'resultVector1' => $resultVector1,
                  'resultVector2' => $resultVector2,
-                'solution' => $solution,
+                 'objective' => $objective,
+                 'constraints' => $constraints,
+                 'solution' => $solution,
                  //'optimalSolution' => $optimalSolution,
                  //'result' => $result,  
                  //'w' => $w,

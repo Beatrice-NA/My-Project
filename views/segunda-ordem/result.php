@@ -31,10 +31,17 @@
     <p>O vetor de resultado não foi definido.</p>
     <?php endif; ?>
 
-    <?php
-    echo "<h3>Resultado do Simplex</h3>";
-    echo "<pre>";
-    print_r($solution, true) ?></pre>
+    <h3>Simplex Solution:</h3>
+    <pre>
+    <?php 
+    if (isset($solution) && !empty($solution)) {
+        var_dump($solution);  // Agora, var_dump() vai funcionar corretamente
+    } else {
+        echo "Nenhuma solução encontrada ou erro na execução do Simplex.";
+    }
+    ?>
+    </pre>
+
 
     <h3>Current Vector</h3>
     <pre><?= print_r($currentVector, true) ?></pre>

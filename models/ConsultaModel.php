@@ -49,6 +49,7 @@ class ConsultaModel extends Model
     private $constraints; 
     private $tableau;
     private $Variables;
+    public $bounds;
     
     
     
@@ -1076,20 +1077,36 @@ class ConsultaModel extends Model
         return $resultVector2;
     }
 
-    public function calcularSimplex()
+   
+    public function prepareSimplexData()
     {
-        // Configuração do problema de otimização
-        $objective = [23/50, 207/500, 0, 0, 0]; // Maximizar a Função objetivo W representado pelo primeiro coefisente(os dois zeros são números artificais)
-        
-        $constraints = [
-            [23/50, -207/500, 1, 0, 0, 111/250],  // Restrição 1 com corficiente
-            [-23/50, 207/500, 0, 1, 0, 4/9],   // Restrição 2 com coeficiente
-            [1, 1, 0, 0, 1, 1],   // Soma das variáveis de decisão deve ser 1
-           
-        ];
 
-        $simplex = new Simplex($objective, $constraints);
-        return $simplex->solve();
+        try {
+            // Processar a função objetivo
+            $objective = array_map('floatval', explode(',', $this->objective_function));
+
+            // Processar as restrições
+            $constraints = array_map(function ($line) {
+                return array_map('floatval', preg_split('/,\s*/', $line));
+            }, explode("\n", trim($this->constraints)));
+
+            // Instanciar a classe Simplex
+            $simplex = new Simplex($objective, $constraints);
+
+            // Resolver o problema
+            $solution = $simplex->solve();
+
+            return [
+                'objective' => $objective,
+                'constraints' => $constraints,
+                'solution' => $solution,  // Adicionando a solução no retorno
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }    
         
     }
 
@@ -1147,7 +1164,7 @@ private function normalizeVector($vector)
     }, $vector);
 }
 
-//public function calculateW($resultVector1, $resultVector2, $initialVector, $bestLambdas)
+    //public function calculateW($resultVector1, $resultVector2, $initialVector, $bestLambdas)
 //{
     // Exemplos de entrada
    // $resultVector1 = [0.3, 0.2, 0.1];

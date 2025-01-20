@@ -5,6 +5,11 @@ $db = require __DIR__ . '/db.php';
 Yii::setAlias('@web', (stripos($_SERVER['SERVER_PROTOCOL'],'https') === true ? 'https://' : 'http://' . $_SERVER['SERVER_NAME'] . ($_SERVER['SERVER_PORT'] !== '80' ? ':' . $_SERVER['SERVER_PORT'] : '')));
 Yii::setAlias('@webroot', dirname(__DIR__) . '/web');
 Yii::setAlias('composer', dirname(__FILE__) . '/../../../vendor');
+Yii::setAlias('@PHPSimplex', dirname(__DIR__) . '/PHPSimplex');
+
+Yii::setAlias('@PHPSimplex', dirname(__DIR__) . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . 'join' . DIRECTORY_SEPARATOR . 'PHPSimplex');
+
+require_once(Yii::getAlias('@PHPSimplex') . DIRECTORY_SEPARATOR . 'Simplex.php');
 
 $config = [
     'id' => 'basic',
@@ -15,7 +20,10 @@ $config = [
         '@bower' => '@vendor/bower-asset',
         '@npm'   => '@vendor/npm-asset',
         '@cmtdUrl' => '@web/index.php?r=exercicios/cmtd',
-        '@cmoUrl' => '@web/index.php?r=exercicios/cmo'
+        '@cmoUrl' => '@web/index.php?r=exercicios/cmo',
+        '@PHPSimplex' => '@app/views/join/PHPSimplex',
+        
+
     ],
 
     'controllerMap' => [
