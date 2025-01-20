@@ -1701,26 +1701,7 @@ class MainController extends Controller
         $matrix = $model->getMatrix();
 
         try {
-            // Definindo a função objetivo para a otimização
-           // $objectiveFunction = function ($variables) {
-            //  maximiza λ_1^2 + λ_2^2
-           // return pow($variables[0], 2) + pow($variables[1], 2);
-            //};
-
-            // Chamando a função solveOptimizationProblem
-           // try {
-             //$result = $model-> solveOptimizationProblem($objectiveFunction, 2);
-            //} catch (Exception $e) {
-                //$result = null;
-               // Yii::error($e->getMessage(), __METHOD__);
-            //}
-
-             // Exibindo o resultado no log ou usando-o em cálculos posteriores
-            //if (is_array($result) && !empty($result)) {
-               // Yii::info("Solução ótima encontrada: " . implode(", ", $result), __METHOD__);
-        // } else {
-               // Yii::warning("Nenhuma solução válida foi encontrada.", __METHOD__);
-            //}
+            
             $initialVector = $model->calculateInitialVector($matrix);
             $resultVector1 = $model->multiplyMatrixByinitialVector($matrixSegundaOrdem, $initialVector);
             $resultVector2 = $model->multiplyMatrixByinitialVector($three_state_matrix1, $initialVector);
@@ -1742,7 +1723,7 @@ class MainController extends Controller
         $simplex = new Simplex($objective, $constraints);
         $solution = $simplex->solve();
 
-    // Adiciona o método getTableau() na classe Simplex para acesso ao tableau inicial
+    // o método getTableau() 
     echo "Tableau Inicial:\n";
     var_dump($simplex->getTableau());
 
@@ -1751,16 +1732,6 @@ class MainController extends Controller
     var_dump($solution);
 
             
-        //try {
-            // Obter o maior valor de W
-           // $W_star = $model->calculateW($resultVector1, $resultVector2, $initialVector, $bestLambdas);
-       // } catch (\Exception $e) {
-           // $W_star = null; // Em caso de erro, definir como nulo
-           // Yii::error("Erro ao calcular W: " . $e->getMessage());
-       // }
-
-       // $bestLambdas = [0, 1]; // Melhores valores calculados
-       // $optimalSolution = $model->calculateOptimalSolution($bestLambdas, $W_star);
 
         $three_state_matrix1 = [
             [0.5, 0.3, 0.2],
