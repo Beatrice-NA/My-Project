@@ -1714,12 +1714,13 @@ class MainController extends Controller
             Yii::error("Erro no processamento: " . $e->getMessage());
         }
 
-        $objective = [5, 4]; // Função objetivo (simplificada, sem variáveis de decisão aqui)
+        $objective = [-0.46, -0.414]; // Função objetivo (simplificada, sem variáveis de decisão aqui)
         $constraints = [
-             [6, 4, 1, 0, 0, 24],  // 6x1 + 4x2 + x3 = 24
-             [1, 2, 0, 1, 0, 6],   // x1 + 2x2 + x4 = 6
-             [-1, 1, 0, 0, 1, 1],  // -x1 + x2 + x5 = 1
+            [0.46, -0.414, 0.444],  // Restrição 1: coeficientes + RHS(0.46x1 - 0.414x2  = 0.444) 
+            [0.46,  0.414, 0.444],   // Restrição 2: coeficientes + RHS(-0.46x1 + 0.414x2 = 0.444) 
+            //[-1, 1, 0, 0, 1, 1],  // -x1 + x2 + x5 = 1
         ];
+
         $simplex = new Simplex($objective, $constraints);
         $solution = $simplex->solve();
 

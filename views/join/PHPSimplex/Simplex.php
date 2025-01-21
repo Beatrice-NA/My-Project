@@ -24,13 +24,13 @@ class Simplex
         // Adicionar a linha Z (função objetivo para minimização)
         $this->tableau[] = array_merge(
             array_map(fn($coef) => -1 * $coef, $this->objective), // Coeficientes negativos para minimização
-            array_fill(0, $numConstraints, -1000), //  alta valor para variáveis artificiais
+            array_fill(0, $numConstraints + $numConstraints, 0), // Espaço para folgas e artificiais
             [0] // Valor inicial de Z
         );
 
         // Adicionar as restrições
         foreach ($this->constraints as $index => $constraint) {
-            $rhsValue = $constraint[$numVariables]; // Último elemento é o lado direito da equação (RHS) 
+            $rhsValue = $constraint[$numVariables]; // Último elemento é o RHS
             $constraintCoefficients = array_slice($constraint, 0, $numVariables);
 
             // Criar a linha da restrição
@@ -49,27 +49,42 @@ class Simplex
     public function solve()
     {
         // Resolver em duas fases (Fase 1: Artificiais, Fase 2: Original)
-        while ($this->canImprove()) {
-            $pivotColumn = $this->findPivotColumn();
-            $pivotRow = $this->findPivotRow($pivotColumn);
-            if ($pivotRow === null) {
-                throw new \Exception("Problema não tem solução viável.");
-            }
-            $this->performPivot($pivotRow, $pivotColumn);
+    while ($this->canImprove()) {
+        $pivotColumn = $this->findPivotColumn();
+        $pivotRow = $this->findPivotRow($pivotColumn);
+        if ($pivotRow === null) {
+            throw new \Exception("Problema não tem solução viável.");
         }
+        $this->performPivot($pivotRow, $pivotColumn);
+        
+        // Depuração: mostrar tableau após cada pivotagem
+        echo "Tableau após pivotagem:\n";
+        var_dump($this->tableau);
+    }
 
-        $this->removeArtificialVariables();
+       // Remover variáveis artificiais
+    $this->removeArtificialVariables();
+    echo "Tableau após remover variáveis artificiais:\n";
+    var_dump($this->tableau);
 
-        while ($this->canImprove()) {
-            $pivotColumn = $this->findPivotColumn();
-            $pivotRow = $this->findPivotRow($pivotColumn);
-            if ($pivotRow === null) {
-                throw new \Exception("Problema não tem solução viável.");
-            }
-            $this->performPivot($pivotRow, $pivotColumn);
+    while ($this->canImprove()) {
+        $pivotColumn = $this->findPivotColumn();
+        $pivotRow = $this->findPivotRow($pivotColumn);
+        if ($pivotRow === null) {
+            throw new \Exception("Problema não tem solução viável.");
         }
+        $this->performPivot($pivotRow, $pivotColumn);
 
-        return $this->getSolution();
+        // Depuração: mostrar tableau após cada pivotagem na Fase 2
+        echo "Tableau após pivotagem na Fase 2:\n";
+        var_dump($this->tableau);
+    }
+    // Solução final
+    $solution = $this->getSolution();
+    echo "Solução final:\n";
+    var_dump($solution);
+
+    return $solution;
     }
 
     private function canImprove()
@@ -81,25 +96,25 @@ class Simplex
     }
 
     private function findPivotColumn()
-{
-    return array_search(min($this->tableau[0]), $this->tableau[0]);
-}
+    {
+        return array_search(min($this->tableau[0]), $this->tableau[0]);
+    }
 
     private function findPivotRow($pivotColumn)
-{
-    $ratios = [];
-    for ($i = 1; $i < count($this->tableau); $i++) {
-        $row = $this->tableau[$i];
-        // Verifica se o elemento no pivotColumn é positivo e suficientemente grande para evitar divisões por quase zero
-        if (abs($row[$pivotColumn]) > 1e-10) { 
-            $ratios[$i] = $row[count($row) - 1] / $row[$pivotColumn];
+    {
+        $ratios = [];
+        for ($i = 1; $i < count($this->tableau); $i++) {
+            $row = $this->tableau[$i];
+            if ($row[$pivotColumn] > 0) { // Evitar divisão por zero ou valores negativos
+                $ratios[$i] = $row[count($row) - 1] / $row[$pivotColumn];
+            }
         }
+        if (empty($ratios)) {
+            return null; // Nenhuma razão válida encontrada
+        }
+        return array_search(min($ratios), $ratios);
     }
-    if (empty($ratios)) {
-        return null; // Nenhuma razão válida encontrada
-    }
-    return array_search(min($ratios), $ratios);
-}
+    
 
     private function performPivot($pivotRow, $pivotColumn)
     {

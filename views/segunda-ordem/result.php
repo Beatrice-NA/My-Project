@@ -35,14 +35,26 @@
 <pre>
 <?php
 if (isset($solution) && !empty($solution)) {
+    echo "Solução encontrada:\n";
     foreach ($solution as $variable => $value) {
         echo "{$variable} = {$value}\n";
     }
 } else {
-    echo "Nenhuma solução encontrada ou erro na execução do Simplex.";
+    echo "Nenhuma solução encontrada ou erro na execução do Simplex.\n\n";
+
+    // Depuração adicional
+    if (isset($tableau_inicial) && !empty($tableau_inicial)) {
+        echo "Tableau Inicial:\n";
+        foreach ($tableau_inicial as $row) {
+            echo implode("\t", $row) . "\n";
+        }
+    } else {
+        echo "Tableau inicial não disponível para depuração.";
+    }
 }
 ?>
 </pre>
+
 
 
 
